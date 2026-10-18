@@ -48,7 +48,8 @@ int obd_video_accept(const char *address, unsigned port, void **library, const v
     if(!handle) return -1;
 #define LOAD(field,name) do { void *p=dlsym(handle,name); \
     typedef char same_size[sizeof(field)==sizeof(p)?1:-1]; (void)sizeof(same_size); \
-    if(!p) goto failed; memcpy(&field,&p,sizeof(p)); } while(0)
+    if(!p) { goto failed; } \
+    memcpy(&field,&p,sizeof(p)); } while(0)
     LOAD(socket_fn,"socket"); LOAD(bind_fn,"bind");
     LOAD(listen_fn,"listen"); LOAD(accept_fn,"accept");
 #undef LOAD
