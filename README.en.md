@@ -1,6 +1,17 @@
-[简体中文](README.md) | **English**
+**English** | [简体中文](README.md)
 
 # OpenBYDDisplay
+
+![OpenBYDDisplay — open-source head-unit and instrument-cluster connectivity, research test version](docs/assets/project-banner.svg)
+
+<p align="center">
+  <a href="https://github.com/wayyoungboy/open-byd-display/releases"><strong>Download test APK</strong></a> ·
+  <a href="README.md">简体中文</a> ·
+  <a href="#usage">Usage</a> ·
+  <a href="#documentation">Documentation</a> ·
+  <a href="https://github.com/wayyoungboy/open-byd-display/issues">Report an issue</a> ·
+  <a href="https://afdian.com/a/wayyoung">Sponsor</a>
+</p>
 
 **Open-source instrument-cluster display and head-unit connectivity for BYD vehicles.**
 比亚迪仪表显示与车机互联开源项目。
@@ -24,9 +35,9 @@ Several BYD models, such as the **2021 BYD Song PLUS DM-i**, ship with a digital
 
 OpenBYDDisplay is the open, account-free successor of the *Xiaohuihui head-unit tool* (小灰灰车机工具, a.k.a. PandaCast), a cluster-cast client that talks to the cluster over **USB NCM**. The underlying approach of that tool — an H.264 stream at **1920×720**, a fly-screen mode and a soft vignette / gradient edge mask — is the reference design for this project. Those casting components have **not** been released in this repository yet.
 
-### What this repository contains today (v0.1.0)
+### What this repository contains today
 
-v0.1.0 is an **update-pipeline research release**. It provides the plumbing needed to deliver software to the cluster safely, which every later feature depends on:
+The project is in the **update-pipeline research stage**. It provides the transport and validation used to deliver software to a matching service:
 
 | Component | Path | Purpose |
 | --- | --- | --- |
@@ -43,7 +54,7 @@ v0.1.0 is an **update-pipeline research release**. It provides the plumbing need
 Implemented in this repository:
 
 - **No login, VIP tier, commercial license or token.** The wire encoder refuses to send `token` / `client_time` fields.
-- **USB NCM transport** — newline-delimited JSON over TCP (default port `47785`). When the cluster address is in `192.168.77.x`, the client binds to the head unit's NCM address `192.168.77.2`; the default cluster host is `192.168.77.1`.
+- **USB NCM transport** — newline-delimited JSON over TCP (default port `47785`). When the cluster address is in `192.168.77.x`, the client binds to the head unit's NCM address `192.168.77.2`; the default cluster host is `192.168.77.1`. The app does not configure the NCM interface itself.
 - **Local package pre-check** before anything is sent:
   - **ZIP firmware packages:** exactly the six required files (`app.sv`, `os.sv`, `mcu.sv`, `kzbVersion`, `RcAppVersion`, `version_svp`) plus optional `patch.sv`, path sanitisation, ZIP CRC and the MD5 of each SV compressed body.
   - **FUP2 component packages:** header, manifest, paths and per-file payload SHA-256.
@@ -51,7 +62,8 @@ Implemented in this repository:
 - **Upload and install are separate, explicit user actions.** Install requires ticking *"I have parked and verified the vehicle model and cluster hardware"*; the app sends the confirmation word `INSTALL_COMPONENTS` or `FLASH_FIRMWARE`.
 - **Safe-by-default job handling:** the job state is persisted, the "apply attempted" flag is saved *before* the request is sent, uncertain results are only ever queried and never re-submitted automatically, and a corrupted local job record blocks new jobs instead of being overwritten.
 - **Pre-flight cluster checks:** reads `update.info` capabilities and requires `cast.status` to report the cluster idle (not casting) before uploading.
-- **No boot receiver and no automatic flashing.**
+- **Opt-in boot startup (0.1.1+).** Disabled by default. A system boot can open the app when permitted, or offer a notification. It never resumes uploads, installs packages or starts casting. Android 10+ needs permission to open an activity from the background; OEM behavior still requires vehicle testing.
+- **ADB assistant.** Read-only package, permission and IPv4 diagnostics by default. Explicit configuration sets only the selected app's overlay app-op and opens the app; the user enables startup in the app. See [ADB and startup](docs/adb-and-startup.md).
 - **Lab service features:** Ed25519 signature verification, payload digests, target and hardware-ID binding, downgrade refusal, immutable sandbox generations with atomic `current.json` publishing, and regression tests for interrupted transfers, lost final replies, duplicate requests and partial publishes.
 
 Signature, digest, target-model and hardware checks are intentionally kept: they prevent tampering and mis-flashing. This project does **not** remove any third-party firmware's own authorization or trusted public keys; packages signed with your own key only work with a service that trusts that key.
@@ -94,6 +106,7 @@ Create your own `local.properties` (pointing at your Android SDK) and a Python v
 
 ```sh
 python3 -m pip install -r instrument/requirements.txt
+python3 -m unittest discover -s tools/tests -v
 PYTHONPATH=instrument python3 -m unittest discover -s instrument/tests -v
 ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
 ```
@@ -118,6 +131,8 @@ The app has a single screen:
 6. **Refresh job status** — queries the current job.
 7. Tick **"I have parked and verified the vehicle model and cluster hardware"**, then **Install to cluster**.
 8. **Stop transfer / clear staged package** — cancels a job that has not started installing.
+
+The **Open app on boot** switch and **ADB assistant** configure startup separately from the update workflow. Setup and revocation instructions: [docs/adb-and-startup.md](docs/adb-and-startup.md).
 
 Status meanings: `ready` means the cluster validated the package and is waiting for install; `handed_off` only means the cluster's updater was started, not that the update completed; only `applied` with `applied=true` is a confirmed install. The phone-side pre-check cannot replace cluster-side signature verification and hardware matching, and MD5 is not proof of authenticity.
 
@@ -187,6 +202,16 @@ Before any flashable package for a specific cluster is published, the project ne
 ## Contributing
 
 Use feature branches and pull requests; CI runs the Python and Kotlin tests, Android Lint and uploads a development APK. Please read [AGENTS.md](AGENTS.md) and the docs before changing the update transport, install semantics or release workflows. Do **not** submit third-party APKs, firmware, decompiled code, vehicle identifiers, credentials, commercial licenses or signing private keys, and only contribute content you have the right to submit.
+
+## Documentation
+
+| Topic | Guide |
+| --- | --- |
+| Chinese project overview | [简体中文](README.md) |
+| ADB diagnostics and boot startup | [ADB and startup](docs/adb-and-startup.md) |
+| Host laboratory service and package building | [Instrument lab](docs/instrument-lab.md) |
+| Upload and installation wire protocol | [Update protocol](docs/update-protocol.md) |
+| Signing, CI and GitHub Releases | [Development and distribution](docs/github-distribution.md) |
 
 ## Disclaimer
 

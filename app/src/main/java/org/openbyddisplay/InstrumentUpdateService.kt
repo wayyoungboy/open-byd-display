@@ -16,7 +16,7 @@ import java.nio.file.StandardCopyOption
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
-/** No boot receiver, automatic apply, or mutation retry. A lost result stays unknown. */
+/** Never automatically uploads, applies, or retries a mutation. A lost result stays unknown. */
 class InstrumentUpdateService : Service() {
     private val worker = Executors.newSingleThreadExecutor()
     @Volatile private var client: InstrumentUpdateClient? = null
