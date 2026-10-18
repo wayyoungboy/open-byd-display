@@ -1,70 +1,106 @@
 # OpenBYDDisplay
 
-![OpenBYDDisplay：比亚迪仪表显示与车机互联开源项目，当前为研发测试版](docs/assets/project-banner.svg)
+![OpenBYDDisplay — open-source head-unit and instrument-cluster connectivity, research test version](docs/assets/project-banner.svg)
 
 <p align="center">
-  <a href="https://github.com/wayyoungboy/open-byd-display/releases"><strong>下载测试版</strong></a> ·
-  <a href="#开始使用">开始使用</a> ·
-  <a href="#文档导航">开发文档</a> ·
-  <a href="https://github.com/wayyoungboy/open-byd-display/issues">反馈问题</a> ·
-  <a href="https://afdian.com/a/wayyoung">爱发电赞助</a>
+  <a href="https://github.com/wayyoungboy/open-byd-display/releases"><strong>Download test APK</strong></a> ·
+  <a href="README.zh-CN.md">简体中文</a> ·
+  <a href="#usage">Usage</a> ·
+  <a href="#documentation">Documentation</a> ·
+  <a href="https://github.com/wayyoungboy/open-byd-display/issues">Report an issue</a> ·
+  <a href="https://afdian.com/a/wayyoung">Sponsor</a>
 </p>
 
-[![构建与测试](https://github.com/wayyoungboy/open-byd-display/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/wayyoungboy/open-byd-display/actions/workflows/ci.yml)
-[![MIT License](https://img.shields.io/badge/license-MIT-6488B5?style=flat)](LICENSE)
-[![Android 9+](https://img.shields.io/badge/Android-9%2B-6488B5?style=flat)](app/build.gradle.kts)
+**Open-source instrument-cluster display and head-unit connectivity for BYD vehicles.**
+比亚迪仪表显示与车机互联开源项目。
 
-**比亚迪仪表显示与车机互联开源项目。** 从车机客户端、连接协议到自研仪表服务，逐步构建可研究、可验证的开放实现。无需登录、VIP或商业许可证。
+[![CI](https://github.com/wayyoungboy/open-byd-display/actions/workflows/ci.yml/badge.svg)](https://github.com/wayyoungboy/open-byd-display/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+![Status: test version](https://img.shields.io/badge/status-test%20version-orange)
 
-> **本项目为测试版本，由个人出于兴趣爱好开发。使用本软件即表示你知悉并自愿承担测试风险。在法律允许的最大范围内，本软件按现状提供，不作任何保证；项目作者、贡献者及相关个人或组织不对可能存在的问题及由此产生的损失承担责任。**
+> [!WARNING]
+> **This is a test version, developed by an individual as a hobby project. By using this software you acknowledge and voluntarily accept the risks of testing it. To the maximum extent permitted by applicable law, the software is provided "as is", without warranty of any kind. The authors, contributors, and related individuals or organizations are not liable for any problems or resulting losses.**
+>
+> 本项目为测试版本，由个人出于兴趣爱好开发。使用本软件即表示你知悉并自愿承担测试风险。在法律允许的最大范围内，本软件按现状提供，不作任何保证；项目作者、贡献者及相关个人或组织不对可能存在的问题及由此产生的损失承担责任。
 
-## 当前能做什么
+Everything goes through GitHub: [Releases](https://github.com/wayyoungboy/open-byd-display/releases) (APKs and future update packages) · [Issues](https://github.com/wayyoungboy/open-byd-display/issues) (bug reports and vehicle adaptation notes) · [Actions](https://github.com/wayyoungboy/open-byd-display/actions) (builds and tests).
 
-当前为**更新链路研发阶段**。Android客户端与电脑实验服务已实现下列流程，**暂不包含可刷QNX仪表固件，新App尚未完成实车投屏出画验收**。
+---
 
-| 能力 | 已实现内容 |
-| --- | --- |
-| 更新包预检 | ZIP结构、CRC、SV压缩体MD5；FUP2头、路径和载荷摘要 |
-| 上传与安装 | 流式上传、独立手动安装、任务查询、停止传输与清理 |
-| 异常恢复 | 持久化任务；结果不明时保留记录，不自动重复安装 |
-| 开机自启 | 用户开启后尝试打开App；系统限制与权限状态可见 |
-| ADB辅助配置 | 只读权限/IPv4诊断；显式配置后台打开权限 |
-| 自研服务实验 | 回环TCP服务、Ed25519验签、目标绑定与实验版本切换 |
+## Overview
 
-仪表端投屏接收、QNX原生更新后端及整车恢复流程仍在研发。`instrument/` 只监听电脑回环地址，只操作实验目录，不运行包内`install.sh`、写车辆分区或修改启动记录。开机自启不会恢复上传、提交安装或自动投屏。
+Several BYD models, such as the **2021 BYD Song PLUS DM-i**, ship with a digital instrument cluster that cannot natively mirror content from the head unit. The long-term goal of OpenBYDDisplay is to bring head-unit content to that cluster (and the floating "fly-screen" area): turn-by-turn navigation from AMap (高德地图), synced lyrics from NetEase Cloud Music (网易云音乐), and similar widgets.
 
-更新包签名、摘要、车型与硬件校验继续保留。第三方固件自己的授权与信任公钥不由本项目解除；自有签名包仅适用于信任对应自有公钥的服务。MD5用于完整性检查，不作为真实性凭证。
+OpenBYDDisplay is the open, account-free successor of the *Xiaohuihui head-unit tool* (小灰灰车机工具, a.k.a. PandaCast), a cluster-cast client that talks to the cluster over **USB NCM**. The underlying approach of that tool — an H.264 stream at **1920×720**, a fly-screen mode and a soft vignette / gradient edge mask — is the reference design for this project. Those casting components have **not** been released in this repository yet.
 
-## 车型研发进度
+### What this repository contains today
 
-| 目标 | 进度 | 待确认事项 |
+The project is in the **update-pipeline research stage**. It provides the transport and validation used to deliver software to a matching service:
+
+| Component | Path | Purpose |
 | --- | --- | --- |
-| 21款宋 PLUS DM-i | 已建独立目标配置 | 仪表硬件、QNX原生编译与实车刷写 |
-| 21款唐 PLUS DM-i | 已按用户名称建独立配置 | 准确车型、仪表型号及分别实车验证 |
+| Android head-unit app | `app/` | Picks, pre-checks, streams, queries, applies and cleans up cluster update jobs |
+| Host lab service | `instrument/` | A Python reference implementation of the cluster-side update service, bound to `127.0.0.1` only, operating on a sandbox directory |
+| FUP2 packaging tool | `instrument/openbyddisplay/packages.py` | Generates Ed25519 keys and builds signed, target-bound FUP2 component packages |
+| Release tooling | `tools/`, `.github/workflows/` | CI, signed-APK release pipeline and release-asset generation |
 
-两个目标分别适配，固件文件名、版本号或共享OS不能作为互刷依据。
+> [!IMPORTANT]
+> **There is currently no self-developed QNX firmware that can be flashed to a real car, and the new app has not passed an on-vehicle display acceptance test.** The `instrument/` service is a laboratory program, not a cluster image. It never runs a package's `install.sh`, never writes vehicle partitions and never touches boot records. Cast receiving/rendering on the cluster, a native QNX update backend and a full-vehicle recovery flow are still under development.
 
-## 开始使用
+## Features
 
-1. 从 [Releases](https://github.com/wayyoungboy/open-byd-display/releases) 下载标明测试状态的APK，查看对应版本说明。包名为`org.openbyddisplay`，可与小灰灰独立安装。
-2. 在车辆静止、供电稳定时连接车机，按 [ADB与自启说明](docs/adb-and-startup.md) 读取配置；需要自启时再开启对应权限和开关。
-3. 连接匹配的自研实验服务，选择来源明确的更新包。先检查、再上传、最后手动确认安装；任务结果不明时先查询。
+Implemented in this repository:
 
-现阶段通过GitHub下载并选择本地文件，不执行无人确认的固件OTA。电脑实验包不可刷入现成仪表；旧App请保留，不要为解决签名冲突卸载或清空数据。
+- **No login, VIP tier, commercial license or token.** The wire encoder refuses to send `token` / `client_time` fields.
+- **USB NCM transport** — newline-delimited JSON over TCP (default port `47785`); the default cluster host is `192.168.77.1`. Routing uses the head unit's configured network; the app does not configure the NCM interface itself.
+- **Local package pre-check** before anything is sent:
+  - **ZIP firmware packages:** exactly the six required files (`app.sv`, `os.sv`, `mcu.sv`, `kzbVersion`, `RcAppVersion`, `version_svp`) plus optional `patch.sv`, path sanitisation, ZIP CRC and the MD5 of each SV compressed body.
+  - **FUP2 component packages:** header, manifest, paths and per-file payload SHA-256.
+- **Streaming upload** with progress, a 30-second stall watchdog and no whole-package buffering in memory.
+- **Upload and install are separate, explicit user actions.** Install requires ticking *"I have parked and verified the vehicle model and cluster hardware"*; the app sends the confirmation word `INSTALL_COMPONENTS` or `FLASH_FIRMWARE`.
+- **Safe-by-default job handling:** the job state is persisted, the "apply attempted" flag is saved *before* the request is sent, uncertain results are only ever queried and never re-submitted automatically, and a corrupted local job record blocks new jobs instead of being overwritten.
+- **Pre-flight cluster checks:** reads `update.info` capabilities and requires `cast.status` to report the cluster idle (not casting) before uploading.
+- **Opt-in boot startup (0.1.1+).** Disabled by default. A system boot can open the app when permitted, or offer a notification. It never resumes uploads, installs packages or starts casting. Android 10+ needs permission to open an activity from the background; OEM behavior still requires vehicle testing.
+- **ADB assistant.** Read-only package, permission and IPv4 diagnostics by default. Explicit configuration sets only the selected app's overlay app-op and opens the app; the user enables startup in the app. See [ADB and startup](docs/adb-and-startup.md).
+- **Lab service features:** Ed25519 signature verification, payload digests, target and hardware-ID binding, downgrade refusal, immutable sandbox generations with atomic `current.json` publishing, and regression tests for interrupted transfers, lost final replies, duplicate requests and partial publishes.
 
-## 文档导航
+Signature, digest, target-model and hardware checks are intentionally kept: they prevent tampering and mis-flashing. This project does **not** remove any third-party firmware's own authorization or trusted public keys; packages signed with your own key only work with a service that trusts that key.
 
-| 你想做什么 | 入口 |
-| --- | --- |
-| 配置ADB、开机自启 | [ADB与自启](docs/adb-and-startup.md) |
-| 运行电脑实验服务、制作自签名包 | [仪表端实验](docs/instrument-lab.md) |
-| 研究上传、查询及安装协议 | [更新协议](docs/update-protocol.md) |
-| 了解签名、构建与版本分发 | [GitHub开发与分发](docs/github-distribution.md) |
-| 查看构建或提交适配问题 | [Actions](https://github.com/wayyoungboy/open-byd-display/actions) / [Issues](https://github.com/wayyoungboy/open-byd-display/issues) |
+**Not yet implemented here:** cluster-side H.264 receiving/rendering, navigation and lyrics casting, fly-screen layout, vignette mask, flashable QNX firmware, automatic OTA.
 
-## 本地开发
+## Supported vehicles and requirements
 
-需要JDK17、Android SDK34/build-tools34.0.0、Python3.12。配置自己的`local.properties`和Python虚拟环境后，在仓库根目录运行：
+Each target has its own profile in [`instrument/targets.json`](instrument/targets.json). The two targets are **not interchangeable** — a matching firmware filename, OS hash or version string is not proof of compatible cluster hardware.
+
+| Target ID | Vehicle | Status |
+| --- | --- | --- |
+| `song-plus-dmi-2021` | 2021 BYD Song PLUS DM-i | Profile created; cluster hardware, native QNX build and on-vehicle flashing **not yet verified** |
+| `tang-plus-dmi-2021` | 2021 BYD Tang PLUS DM-i (name as reported by users) | Profile created; exact model and cluster part number **to be confirmed**; never cross-flash with the Song build |
+
+**Head-unit app**
+
+- Android 9 (API 28) or later; `targetSdk` 29
+- USB connection to the cluster in NCM mode
+- Package name `org.openbyddisplay` — independent from the original Xiaohuihui app, so both can be installed side by side; you do not need to uninstall or clear the original app
+
+**Development**
+
+- JDK 17
+- Android SDK Platform 34 and Build-Tools 34.0.0 (Android Gradle Plugin 8.2.2, Kotlin 1.9.22, via the bundled Gradle wrapper)
+- Python 3.12 (dependency: `cryptography`, see [`instrument/requirements.txt`](instrument/requirements.txt))
+
+## Build and install
+
+### Install a release build
+
+1. Download the APK marked as a test build (`OpenBYDDisplay-<version>-test.apk`) from [Releases](https://github.com/wayyoungboy/open-byd-display/releases) and check it against the published SHA-256.
+2. Install it on the head unit (sideload / `adb install`).
+
+Development artifacts from CI are signed differently from release APKs; use the Release APK for day-to-day use.
+
+### Build from source
+
+Create your own `local.properties` (pointing at your Android SDK) and a Python virtual environment, then:
 
 ```sh
 python3 -m pip install -r instrument/requirements.txt
@@ -73,18 +109,124 @@ PYTHONPATH=instrument python3 -m unittest discover -s instrument/tests -v
 ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
 ```
 
-源码、评审、反馈及分发均通过GitHub。改动使用分支和PR，CI提供开发APK，版本标签触发使用稳定独立签名的Release构建。私钥不入Git；完整规则见[分发说明](docs/github-distribution.md)。
+The debug APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
 
-## 支持与贡献
+Passing `-PusbTestInstall=true` builds a side-by-side development variant with package `org.openbyddisplay.usbtest` and the label *OpenBYDDisplay · 开发版*.
 
-欢迎提交可复现的问题、协议研究和有权公开的代码。反馈请写明车型、仪表硬件与版本、车机系统、App版本、操作步骤和错误信息；发布日志前移除车辆标识、账号及密钥。请勿上传第三方APK、固件、反编译代码或商业许可证。
+Release builds are signed with a stable, dedicated Android key supplied through `SIGNING_KEYSTORE_PATH`, `SIGNING_STORE_PASSWORD`, `SIGNING_KEY_ALIAS` and `SIGNING_KEY_PASSWORD`. Private keys are never committed. See [docs/github-distribution.md](docs/github-distribution.md) for the tag, signing and certificate-fingerprint rules. Forks that publish their own builds should use their own package name, key and fingerprint.
 
-如果这个项目对你有帮助，可以通过[爱发电](https://afdian.com/a/wayyoung)支持个人兴趣开发。**赞助完全自愿，不影响功能和更新下载。**
+## Usage
 
-## 独立性与许可
+> Only use update packages that match your current cluster and come from a known source. Operate with the vehicle stationary and the power supply stable. Stop any casting first.
 
-本项目与比亚迪、德赛及其他厂商、商业投屏产品不存在隶属、合作、授权、认证或背书关系；名称仅用于说明研究对象，不授予商标使用权。本仓库只发布自主代码与有权再分发的依赖。
+The app has a single screen:
 
-修改车机和仪表可能导致不可启动、显示异常、原车功能受影响、数据或财产损失，并可能影响质保或合规状态。支持与适配结论以明确的版本和实际证据为限；“可构建”“收到ACK”“已暂存”不代表车辆可安全刷写或实际出画。
+1. **Cluster address** — defaults to `192.168.77.1`.
+2. **Check cluster update capability** — reads `update.info`.
+3. **GitHub releases and downloads** — opens the Releases page. Packages are downloaded manually and then picked as local files; the app does not perform automatic OTA or APK installation.
+4. **Select and check package (ZIP / FUP)** — runs the local pre-check and shows file size and SHA-256. RAR archives are not accepted.
+5. **Upload to cluster and verify** — streams the package; the cluster validates it.
+6. **Refresh job status** — queries the current job.
+7. Tick **"I have parked and verified the vehicle model and cluster hardware"**, then **Install to cluster**.
+8. **Stop transfer / clear staged package** — cancels a job that has not started installing.
 
-本项目采用 [MIT License](LICENSE)，保留原作者及贡献者版权声明，见 [NOTICE](NOTICE)。
+The **Open app on boot** switch and **ADB assistant** configure startup separately from the update workflow. Setup and revocation instructions: [docs/adb-and-startup.md](docs/adb-and-startup.md).
+
+Status meanings: `ready` means the cluster validated the package and is waiting for install; `handed_off` only means the cluster's updater was started, not that the update completed; only `applied` with `applied=true` is a confirmed install. The phone-side pre-check cannot replace cluster-side signature verification and hardware matching, and MD5 is not proof of authenticity.
+
+### Trying the host lab service
+
+You can exercise the full update flow against the laboratory service on a computer. From the repository root:
+
+```sh
+export PYTHONPATH=instrument
+python3 -m openbyddisplay.packages keygen lab-state/keys
+mkdir -p lab-state/source
+echo 'OpenBYDDisplay development data' > lab-state/source/version.txt
+python3 -m openbyddisplay.packages build \
+  --source lab-state/source --key lab-state/keys/development-private.pem \
+  --target song-plus-dmi-2021 --hardware-id host-lab --version 0.1.0 \
+  --output lab-state/song-0.1.0-lab.fup
+python3 -m openbyddisplay.service \
+  --state lab-state/song --public-key lab-state/keys/development-public.pem \
+  --target song-plus-dmi-2021 --hardware-id host-lab --port 47785
+```
+
+For the Tang target use `tang-plus-dmi-2021` with a separate output package and state directory. **Never use lab packages on a real cluster.** Keys, packages and state directories are git-ignored and never published. Details: [docs/instrument-lab.md](docs/instrument-lab.md).
+
+## Architecture
+
+```
+ Head unit (Android)                                   Cluster side
+┌──────────────────────────────────────┐   USB NCM   ┌──────────────────────────────┐
+│ MainActivity  (UI, 800 ms refresh)   │ 192.168.77.x│ update service (port 47785)  │
+│   │ intents                          │  TCP, JSON  │  update.info / upload /      │
+│   ▼                                  │   lines +   │  status / apply / cancel     │
+│ InstrumentUpdateService (foreground) │  raw bytes  │  cast.status                 │
+│   ├─ InstrumentUpdatePackage  ──────►│◄───────────►│                              │
+│   │    ZIP/SV & FUP2 pre-check       │             │ today: instrument/ Python    │
+│   ├─ InstrumentUpdateClient          │             │ lab service on 127.0.0.1,    │
+│   │    streaming socket transport    │             │ sandbox only                 │
+│   ├─ InstrumentUpdateProtocol        │             │                              │
+│   │    requests, capability, stages  │             │ planned: native QNX service  │
+│   ├─ ClusterWireProtocol             │             │ (not yet implemented)        │
+│   │    JSON-line codec, no tokens    │             └──────────────────────────────┘
+│   └─ InstrumentUpdateStore           │
+│        persisted job state           │
+└──────────────────────────────────────┘
+```
+
+**Upload flow:** the client sends `update.upload` with a random 32-hex `update_id`, `kind` (`firmware` / `components`) and `bytes`; waits for `ok`/`ready` for the same ID; sends exactly `bytes` raw bytes; then reads the stage reply. A `duplicate` reply never triggers a re-send. Package limits: 512 MiB for a firmware ZIP, 256 MiB payload plus header/manifest for a component package.
+
+**FUP2 component package:** an 8-byte magic (`FUP2\r\n\x1a\n`), manifest length, reserved field, payload length, a 64-byte Ed25519 signature, the UTF-8 manifest (`format`, `version`, `package_id`, `files[]`), then the payload in manifest order. Lab packages additionally carry a signed `xhh-target.json` binding the target model and hardware ID.
+
+Full specification: [docs/update-protocol.md](docs/update-protocol.md).
+
+### Repository layout
+
+```
+app/                  Android head-unit app (Kotlin) and unit tests
+instrument/           Host lab service, FUP2 packager, target profiles, tests
+tools/                Release signing preparation and asset generation
+docs/                 Protocol, lab, distribution docs and release notes
+config/               Public release-certificate SHA-256 fingerprint
+LICENSES/, NOTICE     Third-party licenses and attribution
+```
+
+### Roadmap
+
+Before any flashable package for a specific cluster is published, the project needs a legitimate QNX toolchain, a native port of the service, a platform install backend, real cluster hardware identification, a recovery entry independent of the update partition, and separate verification on each target vehicle. Cluster-side casting (navigation, lyrics, fly-screen, vignette mask) builds on top of that.
+
+## Contributing
+
+Use feature branches and pull requests; CI runs the Python and Kotlin tests, Android Lint and uploads a development APK. Please read [AGENTS.md](AGENTS.md) and the docs before changing the update transport, install semantics or release workflows. Do **not** submit third-party APKs, firmware, decompiled code, vehicle identifiers, credentials, commercial licenses or signing private keys, and only contribute content you have the right to submit.
+
+## Documentation
+
+| Topic | Guide |
+| --- | --- |
+| Chinese project overview | [简体中文](README.zh-CN.md) |
+| ADB diagnostics and boot startup | [ADB and startup](docs/adb-and-startup.md) |
+| Host laboratory service and package building | [Instrument lab](docs/instrument-lab.md) |
+| Upload and installation wire protocol | [Update protocol](docs/update-protocol.md) |
+| Signing, CI and GitHub Releases | [Development and distribution](docs/github-distribution.md) |
+
+## Disclaimer
+
+**Stability and safety.** This is experimental test software. Modifying a head unit or instrument cluster can make it unbootable, cause display faults, affect original vehicle functions, cause data or property loss, and may affect your warranty or regulatory compliance. Never operate the software while driving. Any support, adaptation or test conclusion applies only to the explicitly listed versions and actual evidence; "it builds", "received an ACK" or "staged" does not mean a vehicle can be safely flashed or actually displays an image.
+
+**Trademarks and independence.** BYD, Desay, AMap (高德), NetEase Cloud Music (网易云音乐) and all other product or company names are trademarks of their respective owners. This project has no affiliation, partnership, authorization, certification or endorsement relationship with BYD, Desay, any other manufacturer or any commercial casting product. Names are used only to describe the subject of the research and grant no trademark rights. This repository distributes only its own code and dependencies that may be redistributed; it contains no third-party APKs, cluster firmware, decompiled code, vendor keys or personal vehicle data. FUP2 layout descriptions are interoperability facts.
+
+## Acknowledgements
+
+Special thanks to **迹迪自迷加** and **远方的小熊猫智能守卫** for their help and support.
+
+Thanks also to everyone who reports issues and shares vehicle adaptation results, and to the Kotlin, AndroidX, Gradle and `cryptography` projects.
+
+## Support
+
+If you find the project useful, you can sponsor it on [Afdian (爱发电)](https://afdian.com/a/wayyoung). Sponsorship is entirely voluntary and does not affect features or access to updates.
+
+## License
+
+[MIT License](LICENSE). The original author's and contributors' copyright notices are retained; see [NOTICE](NOTICE). The initial Android update-client core is derived from the author's MIT-licensed `xiaohuihui-cluster-cast`. Gradle wrapper, Kotlin and AndroidX components are used under the [Apache License 2.0](LICENSES/Apache-2.0.txt).
