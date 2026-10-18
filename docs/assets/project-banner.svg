@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="340" viewBox="0 0 1440 340" role="img" aria-labelledby="title description">
+  <title id="title">OpenBYDDisplay · 比亚迪仪表显示与车机互联</title>
+  <desc id="description">深蓝色项目横幅，车机通过USB连接仪表的线框示意。当前为研发测试版。</desc>
+  <rect width="1440" height="340" rx="24" fill="#101D30"/>
+  <path d="M760 0H1440V340H1010Z" fill="#17283E"/>
+  <path d="M1140 0H1440V340H1360Z" fill="#1D324B"/>
+  <g font-family="Arial, 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif">
+    <g transform="translate(62 68)" fill="none" stroke="#A9C9FF" stroke-width="3">
+      <rect width="40" height="29" rx="5"/>
+      <path d="M12 36H28M20 29V36M47 15H60M57 11L61 15L57 19"/>
+      <path d="M65 5Q82 -1 99 5L103 27H61Z"/>
+    </g>
+    <text x="62" y="167" fill="#F2F6FF" font-size="57" font-weight="700" letter-spacing="-1.6">OpenBYDDisplay</text>
+    <text x="65" y="215" fill="#B7C9E2" font-size="26">比亚迪仪表显示与车机互联开源项目</text>
+    <rect x="64" y="255" width="112" height="33" rx="7" fill="#283F5D"/>
+    <text x="120" y="278" text-anchor="middle" fill="#CEE0FF" font-size="17">研发测试版</text>
+    <text x="194" y="278" fill="#9EB5D1" font-size="18">开放源码，自由探索</text>
+    <g stroke="#688FB9" fill="#132238" stroke-width="2.5">
+      <rect x="843" y="94" width="192" height="119" rx="13"/>
+      <rect x="853" y="104" width="172" height="99" rx="6" fill="#1A304C" stroke="none"/>
+      <path d="M911 226H967M939 214V225"/>
+      <path d="M1175 113Q1243 86 1313 113L1329 207H1159Z"/>
+      <path d="M1184 124Q1243 103 1304 124L1315 193H1173Z" stroke="none" fill="#1A304C"/>
+    </g>
+    <g stroke="#A9C9FF" fill="none" stroke-width="3">
+      <path d="M1036 155H1068Q1077 155 1077 164V185Q1077 194 1086 194H1120Q1129 194 1129 185V166Q1129 157 1138 157H1159"/>
+      <path d="M1074 184V172M1093 184V156M1112 184V165" transform="translate(-177 -24)"/>
+      <path d="M1190 168A25 25 0 0 1 1226 143M1258 143A25 25 0 0 1 1294 168" stroke="#779ACA"/>
+      <rect x="1229" y="146" width="27" height="31" rx="3"/>
+    </g>
+    <text x="939" y="265" text-anchor="middle" fill="#D0DFF2" font-size="19">Android 车机</text>
+    <text x="1097" y="145" text-anchor="middle" fill="#A9C9FF" font-size="15">USB</text>
+    <text x="1244" y="265" text-anchor="middle" fill="#D0DFF2" font-size="19">仪表服务</text>
+    <text x="1366" y="312" text-anchor="end" fill="#91A9C6" font-size="14">连接示意，非实车画面</text>
+  </g>
+</svg>

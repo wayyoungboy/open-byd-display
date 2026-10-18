@@ -1,52 +1,90 @@
 # OpenBYDDisplay
 
-**比亚迪仪表显示与车机互联开源项目。**
+![OpenBYDDisplay：比亚迪仪表显示与车机互联开源项目，当前为研发测试版](docs/assets/project-banner.svg)
+
+<p align="center">
+  <a href="https://github.com/wayyoungboy/open-byd-display/releases"><strong>下载测试版</strong></a> ·
+  <a href="#开始使用">开始使用</a> ·
+  <a href="#文档导航">开发文档</a> ·
+  <a href="https://github.com/wayyoungboy/open-byd-display/issues">反馈问题</a> ·
+  <a href="https://afdian.com/a/wayyoung">爱发电赞助</a>
+</p>
+
+[![构建与测试](https://github.com/wayyoungboy/open-byd-display/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/wayyoungboy/open-byd-display/actions/workflows/ci.yml)
+[![MIT License](https://img.shields.io/badge/license-MIT-6488B5?style=flat)](LICENSE)
+[![Android 9+](https://img.shields.io/badge/Android-9%2B-6488B5?style=flat)](app/build.gradle.kts)
+
+**比亚迪仪表显示与车机互联开源项目。** 从车机客户端、连接协议到自研仪表服务，逐步构建可研究、可验证的开放实现。无需登录、VIP或商业许可证。
 
 > **本项目为测试版本，由个人出于兴趣爱好开发。使用本软件即表示你知悉并自愿承担测试风险。在法律允许的最大范围内，本软件按现状提供，不作任何保证；项目作者、贡献者及相关个人或组织不对可能存在的问题及由此产生的损失承担责任。**
 
-源码、评审、测试构建、问题反馈和软件下载统一通过 GitHub：
+## 当前能做什么
 
-- [Releases：APK 与后续更新包](https://github.com/wayyoungboy/open-byd-display/releases)
-- [Issues：问题与适配记录](https://github.com/wayyoungboy/open-byd-display/issues)
-- [Actions：构建与测试](https://github.com/wayyoungboy/open-byd-display/actions)
+当前为**更新链路研发阶段**。Android客户端与电脑实验服务已实现下列流程，**暂不包含可刷QNX仪表固件，新App尚未完成实车投屏出画验收**。
 
-支持项目：[爱发电赞助](https://afdian.com/a/wayyoung)。赞助完全自愿，不影响软件功能和更新下载。
-
-## 当前阶段
-
-v0.1.0 是**更新链路研发版**：Android 客户端可选包、预检、流式上传、查询、提交安装和清理任务；电脑实验服务可验签、校验目标、暂存组件并切换实验目录中的版本指针。Android 上传与安装分开操作，不会开机自动刷写，结果不明时不自动重复提交。
-
-本版本没有登录、VIP、商业许可证或 Token 鉴权。更新包签名、摘要、目标车型和硬件校验用于防止篡改及错刷，继续保留。第三方固件自己的授权与信任公钥不由本项目解除；自有签名包只适用于信任对应自有公钥的服务。
-
-**当前没有可交付实车刷写的自研 QNX 固件，也没有完成新 App 的实车出画验收。** `instrument/` 是只监听电脑回环地址的实验服务，不是可以刷入仪表的镜像；不会执行包内 `install.sh`、写车辆分区或修改启动记录。投屏接收、QNX原生更新后端和整车恢复流程仍在研发。
-
-| 研发目标 | 当前状态 |
+| 能力 | 已实现内容 |
 | --- | --- |
-| 21款宋 PLUS DM-i | 已建独立目标配置；仪表硬件、QNX原生编译与实车刷写待验证 |
-| 21款唐 PLUS DM-i | 按用户名称建独立配置；准确车型和仪表型号待核实，不能据文件名与宋版互刷 |
+| 更新包预检 | ZIP结构、CRC、SV压缩体MD5；FUP2头、路径和载荷摘要 |
+| 上传与安装 | 流式上传、独立手动安装、任务查询、停止传输与清理 |
+| 异常恢复 | 持久化任务；结果不明时保留记录，不自动重复安装 |
+| 开机自启 | 用户开启后尝试打开App；系统限制与权限状态可见 |
+| ADB辅助配置 | 只读权限/IPv4诊断；显式配置后台打开权限 |
+| 自研服务实验 | 回环TCP服务、Ed25519验签、目标绑定与实验版本切换 |
 
-## 使用与开发
+仪表端投屏接收、QNX原生更新后端及整车恢复流程仍在研发。`instrument/` 只监听电脑回环地址，只操作实验目录，不运行包内`install.sh`、写车辆分区或修改启动记录。开机自启不会恢复上传、提交安装或自动投屏。
 
-从 Releases 下载标明测试状态的 APK。包名 `org.openbyddisplay`，与原小灰灰包独立，不需要卸载或清除原 App。只使用与当前仪表匹配且来源明确的更新包；在车辆静止、供电稳定时进行操作。
+更新包签名、摘要、车型与硬件校验继续保留。第三方固件自己的授权与信任公钥不由本项目解除；自有签名包仅适用于信任对应自有公钥的服务。MD5用于完整性检查，不作为真实性凭证。
 
-当前 App 主要用于自研服务。ZIP 预检覆盖六个必要文件、可选 `patch.sv`、ZIP CRC 和 SV 压缩体 MD5；FUP2 预检覆盖头、路径和载荷摘要。车机预检不能代替仪表端验签及硬件适配验证，MD5不作为真实性凭证。
+## 车型研发进度
 
-实验包的制作、运行、故障恢复及验证边界见 [实验服务说明](docs/instrument-lab.md)，线协议见 [更新协议](docs/update-protocol.md)。App 主页提供 GitHub Releases 入口，当前通过 GitHub 下载后选择本地文件，不声称已经实现固件自动OTA。
+| 目标 | 进度 | 待确认事项 |
+| --- | --- | --- |
+| 21款宋 PLUS DM-i | 已建独立目标配置 | 仪表硬件、QNX原生编译与实车刷写 |
+| 21款唐 PLUS DM-i | 已按用户名称建独立配置 | 准确车型、仪表型号及分别实车验证 |
 
-开发需要 JDK17、Android SDK34/build-tools34.0.0、Python3.12。先配置自己的 `local.properties` 和虚拟环境：
+两个目标分别适配，固件文件名、版本号或共享OS不能作为互刷依据。
+
+## 开始使用
+
+1. 从 [Releases](https://github.com/wayyoungboy/open-byd-display/releases) 下载标明测试状态的APK，查看对应版本说明。包名为`org.openbyddisplay`，可与小灰灰独立安装。
+2. 在车辆静止、供电稳定时连接车机，按 [ADB与自启说明](docs/adb-and-startup.md) 读取配置；需要自启时再开启对应权限和开关。
+3. 连接匹配的自研实验服务，选择来源明确的更新包。先检查、再上传、最后手动确认安装；任务结果不明时先查询。
+
+现阶段通过GitHub下载并选择本地文件，不执行无人确认的固件OTA。电脑实验包不可刷入现成仪表；旧App请保留，不要为解决签名冲突卸载或清空数据。
+
+## 文档导航
+
+| 你想做什么 | 入口 |
+| --- | --- |
+| 配置ADB、开机自启 | [ADB与自启](docs/adb-and-startup.md) |
+| 运行电脑实验服务、制作自签名包 | [仪表端实验](docs/instrument-lab.md) |
+| 研究上传、查询及安装协议 | [更新协议](docs/update-protocol.md) |
+| 了解签名、构建与版本分发 | [GitHub开发与分发](docs/github-distribution.md) |
+| 查看构建或提交适配问题 | [Actions](https://github.com/wayyoungboy/open-byd-display/actions) / [Issues](https://github.com/wayyoungboy/open-byd-display/issues) |
+
+## 本地开发
+
+需要JDK17、Android SDK34/build-tools34.0.0、Python3.12。配置自己的`local.properties`和Python虚拟环境后，在仓库根目录运行：
 
 ```sh
 python3 -m pip install -r instrument/requirements.txt
+python3 -m unittest discover -s tools/tests -v
 PYTHONPATH=instrument python3 -m unittest discover -s instrument/tests -v
 ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
 ```
 
-发布使用稳定的独立 Android 签名；私钥不入 Git。CI仅发布测试构建，版本标签触发 Releases 工作流。签名配置、版本约束和产物规则见 [GitHub分发](docs/github-distribution.md)。
+源码、评审、反馈及分发均通过GitHub。改动使用分支和PR，CI提供开发APK，版本标签触发使用稳定独立签名的Release构建。私钥不入Git；完整规则见[分发说明](docs/github-distribution.md)。
 
-## 独立性、权利与风险说明
+## 支持与贡献
 
-本项目与比亚迪、德赛及其他厂商、商业投屏产品不存在隶属、合作、授权、认证或背书关系；名称仅用于说明研究对象，不授予商标使用权。本仓库只发布自主代码与有权再分发的依赖，不包含第三方 APK、仪表固件、反编译代码、厂商密钥或车辆个人信息。贡献者必须有权提交所提供的内容，不要上传商业许可证或生产签名私钥。
+欢迎提交可复现的问题、协议研究和有权公开的代码。反馈请写明车型、仪表硬件与版本、车机系统、App版本、操作步骤和错误信息；发布日志前移除车辆标识、账号及密钥。请勿上传第三方APK、固件、反编译代码或商业许可证。
 
-修改车机和仪表可能导致不可启动、显示异常、原车功能受影响、数据或财产损失，并可能影响质保或合规状态。任何支持、适配或测试结论均以明确列出的版本与实际证据为限；“可构建”“收到ACK”“已暂存”不代表车辆可安全刷写或实际出画。
+如果这个项目对你有帮助，可以通过[爱发电](https://afdian.com/a/wayyoung)支持个人兴趣开发。**赞助完全自愿，不影响功能和更新下载。**
+
+## 独立性与许可
+
+本项目与比亚迪、德赛及其他厂商、商业投屏产品不存在隶属、合作、授权、认证或背书关系；名称仅用于说明研究对象，不授予商标使用权。本仓库只发布自主代码与有权再分发的依赖。
+
+修改车机和仪表可能导致不可启动、显示异常、原车功能受影响、数据或财产损失，并可能影响质保或合规状态。支持与适配结论以明确的版本和实际证据为限；“可构建”“收到ACK”“已暂存”不代表车辆可安全刷写或实际出画。
 
 本项目采用 [MIT License](LICENSE)，保留原作者及贡献者版权声明，见 [NOTICE](NOTICE)。
