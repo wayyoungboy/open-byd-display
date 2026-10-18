@@ -52,7 +52,7 @@ The project is in the **update-pipeline research stage**. It provides the transp
 Implemented in this repository:
 
 - **No login, VIP tier, commercial license or token.** The wire encoder refuses to send `token` / `client_time` fields.
-- **USB NCM transport** — newline-delimited JSON over TCP (default port `47785`); the default cluster host is `192.168.77.1`. Routing uses the head unit's configured network; the app does not configure the NCM interface itself.
+- **USB NCM transport** — newline-delimited JSON over TCP (default port `47785`). When the cluster address is in `192.168.77.x`, the client binds to the head unit's NCM address `192.168.77.2`; the default cluster host is `192.168.77.1`. The app does not configure the NCM interface itself.
 - **Local package pre-check** before anything is sent:
   - **ZIP firmware packages:** exactly the six required files (`app.sv`, `os.sv`, `mcu.sv`, `kzbVersion`, `RcAppVersion`, `version_svp`) plus optional `patch.sv`, path sanitisation, ZIP CRC and the MD5 of each SV compressed body.
   - **FUP2 component packages:** header, manifest, paths and per-file payload SHA-256.
