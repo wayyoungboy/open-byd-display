@@ -11,3 +11,7 @@
 - 发布不可覆盖既有版本资产；如修复内容，升版本、经PR检查后创建新标签。初始版本提交与发布记录可以直接追溯到GitHub提交与Actions run。
 
 当前车机App内的“GitHub发布与下载”按钮打开官方Releases。它不执行自动APK安装或无人确认的固件apply。
+
+## 可选赞助入口
+
+`.github/FUNDING.yml` 已预留 Buy Me a Coffee 配置，目前没有启用收款链接。维护者在 [Buy Me a Coffee](https://buymeacoffee.com/) 注册并开通收款主页后，核对完整主页链接，将配置中的用户名替换为实际值并取消注释，经PR合入main即可启用GitHub赞助按钮；README可添加同一主页链接。不要填写银行信息、平台密钥或占位收款账号。赞助不作为使用功能或下载更新的条件。配置格式见 [GitHub官方说明](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository)。
