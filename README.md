@@ -34,6 +34,7 @@
 | ADB辅助配置 | 只读权限/IPv4诊断；显式配置后台打开权限 |
 | 自研服务实验 | 回环TCP服务、Ed25519验签、目标绑定与实验版本切换 |
 | 原生视频核心 | C99 BVL1/LHF2回环接收、帧校验及真实H.264解码实验 |
+| 无SDK原生构建 | Clang/LLD链接原机运行库，生成ARM32探针与校验库；待QNX运行验证 |
 
 仪表端投屏接收、QNX原生更新后端及整车恢复流程仍在研发。`instrument/` 只监听电脑回环地址，只操作实验目录，不运行包内`install.sh`、写车辆分区或修改启动记录。开机自启不会恢复上传、提交安装或自动投屏。
 
@@ -43,7 +44,7 @@
 
 | 目标 | 进度 | 待确认事项 |
 | --- | --- | --- |
-| 21款宋 PLUS DM-i | 已建独立目标配置 | 仪表硬件、QNX原生编译与实车刷写 |
+| 21款宋 PLUS DM-i | 已建独立目标配置；原生编译/链接通过 | 仪表硬件、QNX运行与实车刷写 |
 | 21款唐 PLUS DM-i | 已按用户名称建独立配置 | 准确车型、仪表型号及分别实车验证 |
 
 两个目标分别适配，固件文件名、版本号或共享OS不能作为互刷依据。
@@ -63,6 +64,7 @@
 | 配置ADB、开机自启 | [ADB与自启](docs/adb-and-startup.md) |
 | 运行电脑实验服务、制作自签名包 | [仪表端实验](docs/instrument-lab.md) |
 | 了解自研仪表固件与原生视频进度 | [固件实现](docs/instrument-native.md) / [原生核心](instrument/native/README.md) |
+| 不使用官方SDK编译原生探针 | [Clang/LLD构建实验](docs/qnx66-open-toolchain.md) |
 | 研究上传、查询及安装协议 | [更新协议](docs/update-protocol.md) |
 | 了解签名、构建与版本分发 | [GitHub开发与分发](docs/github-distribution.md) |
 | 查看构建或提交适配问题 | [Actions](https://github.com/wayyoungboy/open-byd-display/actions) / [Issues](https://github.com/wayyoungboy/open-byd-display/issues) |
