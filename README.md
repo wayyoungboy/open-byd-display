@@ -15,7 +15,7 @@
 
 [![构建与测试](https://github.com/wayyoungboy/open-byd-display/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/wayyoungboy/open-byd-display/actions/workflows/ci.yml)
 [![MIT License](https://img.shields.io/badge/license-MIT-6488B5?style=flat)](LICENSE)
-[![Android 9+](https://img.shields.io/badge/Android-9%2B-6488B5?style=flat)](app/build.gradle.kts)
+[![Android 9+](https://img.shields.io/badge/Android-9%2B-6488B5?style=flat)](headunit/app/build.gradle.kts)
 
 **比亚迪仪表显示与车机互联开源项目。** 从车机客户端、连接协议到自研仪表服务，逐步构建可研究、可验证的开放实现。无需登录、VIP或商业许可证。
 
@@ -34,9 +34,11 @@
 | ADB辅助配置 | 只读权限/IPv4诊断；显式配置后台打开权限 |
 | 自研服务实验 | 回环TCP服务、Ed25519验签、目标绑定与实验版本切换 |
 | 原生视频核心 | C99 BVL1/LHF2回环接收、帧校验及真实H.264解码实验 |
-| 无SDK原生构建 | Clang/LLD链接原机运行库，生成ARM32探针与校验库；待QNX运行验证 |
+| 无SDK原生构建 | Clang/LLD链接原机运行库，生成ARM32探针、播放器与媒体库；待QNX运行验证 |
+| 解码显示适配 | 单会话TCP/stdin、mm-renderer/mdevpush、所属Screen窗口及失败清理；待仪表验证 |
+| 增量安装实验 | 签名差量、基线绑定、完整代际重建、试启动确认及未确认回退 |
 
-仪表端投屏接收、QNX原生更新后端及整车恢复流程仍在研发。`instrument/` 只监听电脑回环地址，只操作实验目录，不运行包内`install.sh`、写车辆分区或修改启动记录。开机自启不会恢复上传、提交安装或自动投屏。
+仪表端投屏出画、QNX原生更新后端及整车恢复流程仍待验证或研发。Python更新实验服务只监听电脑回环地址、操作实验目录；原生播放器可显式绑定私有IPv4进行单次测试。两者均不运行包内`install.sh`、写车辆分区或修改启动记录。开机自启不会恢复上传、提交安装或自动投屏。
 
 更新包签名、摘要、车型与硬件校验继续保留。第三方固件自己的授权与信任公钥不由本项目解除；自有签名包仅适用于信任对应自有公钥的服务。MD5用于完整性检查，不作为真实性凭证。
 
@@ -59,25 +61,28 @@
 
 ## 文档导航
 
+源码分为[车机App `headunit/`](headunit/README.md)和[仪表固件 `firmware/`](firmware/README.md)两部分。GitHub、许可和通用文档保留在根目录。
+
 | 你想做什么 | 入口 |
 | --- | --- |
 | 配置ADB、开机自启 | [ADB与自启](docs/adb-and-startup.md) |
 | 运行电脑实验服务、制作自签名包 | [仪表端实验](docs/instrument-lab.md) |
-| 了解自研仪表固件与原生视频进度 | [固件实现](docs/instrument-native.md) / [原生核心](instrument/native/README.md) |
-| 不使用官方SDK编译原生探针 | [Clang/LLD构建实验](docs/qnx66-open-toolchain.md) |
+| 了解自研仪表固件与原生视频进度 | [固件实现](docs/instrument-native.md) / [原生核心](firmware/native/README.md) |
+| 不使用官方SDK编译原生程序 | [Clang/LLD构建实验](docs/qnx66-open-toolchain.md) |
+| 查看解码显示及增量安装 | [原生媒体](docs/native-media.md) / [增量事务](docs/incremental-install.md) |
 | 研究上传、查询及安装协议 | [更新协议](docs/update-protocol.md) |
 | 了解签名、构建与版本分发 | [GitHub开发与分发](docs/github-distribution.md) |
 | 查看构建或提交适配问题 | [Actions](https://github.com/wayyoungboy/open-byd-display/actions) / [Issues](https://github.com/wayyoungboy/open-byd-display/issues) |
 
 ## 本地开发
 
-需要JDK17、Android SDK34/build-tools34.0.0、Python3.12。配置自己的`local.properties`和Python虚拟环境后，在仓库根目录运行：
+需要JDK17、Android SDK34/build-tools34.0.0、Python3.12。配置自己的`headunit/local.properties`和Python虚拟环境后，在仓库根目录运行：
 
 ```sh
-python3 -m pip install -r instrument/requirements.txt
-python3 -m unittest discover -s tools/tests -v
-PYTHONPATH=instrument python3 -m unittest discover -s instrument/tests -v
-./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+python3 -m pip install -r firmware/requirements.txt
+python3 -m unittest discover -s headunit/tools/tests -v
+PYTHONPATH=firmware python3 -m unittest discover -s firmware/tests -v
+./headunit/gradlew -p headunit :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
 ```
 
 源码、评审、反馈及分发均通过GitHub。改动使用分支和PR，CI提供开发APK，版本标签触发使用稳定独立签名的Release构建。私钥不入Git；完整规则见[分发说明](docs/github-distribution.md)。

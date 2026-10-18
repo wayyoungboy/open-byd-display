@@ -1,11 +1,11 @@
 # 仪表端独立研发实验
 
-目标配置在 `instrument/targets.json`。两车型均未确认具体仪表硬件、QNX原生编译或实车刷写。当前Python实现是可运行的协议和状态机实验，不是可刷固件。
+目标配置在 `firmware/targets.json`。两车型原生编译/链接已通过，具体仪表硬件、QNX运行或实车刷写仍未验证。当前Python实现是可运行的协议和状态机实验，不是可刷固件。
 
-在仓库根目录配置Python3.12并安装 `instrument/requirements.txt`：
+在仓库根目录配置Python3.12并安装 `firmware/requirements.txt`：
 
 ```sh
-export PYTHONPATH=instrument
+export PYTHONPATH=firmware
 python3 -m openbyddisplay.packages keygen lab-state/keys
 mkdir -p lab-state/source
 echo 'OpenBYDDisplay development data' > lab-state/source/version.txt
@@ -22,4 +22,6 @@ python3 -m openbyddisplay.service \
 
 服务提供无账号的info/upload/status/apply/cancel，校验签名、载荷、目标与硬件标识，拒绝低版本。安装只写state目录下不可变generation并发布current.json；之前版本保留。脚本不执行，设备分区不访问，不重启车辆。传输中断、最终回执丢失、重复请求和部分发布有回归测试。
 
-下一阶段需具备合法QNX工具链，完成原生服务移植、平台安装后端、真实仪表硬件识别、独立于升级分区的恢复入口及两车型分别验证。只有这些证据齐备后，才可在GitHub发布明确标注对应硬件的可刷包。
+开放Clang/LLD构建已可用。下一阶段完成QNX实际加载与原生服务验证、平台安装后端、真实仪表硬件识别、独立于升级分区的恢复入口及两车型分别验证。只有这些证据齐备后，才可在GitHub发布明确标注对应硬件的可刷包。
+
+新增的[增量事务实验](incremental-install.md)独立管理签名差量、基线和试启动确认；此处原更新服务会拒绝增量包，不会误装成完整代际。

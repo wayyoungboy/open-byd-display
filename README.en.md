@@ -41,15 +41,15 @@ The project is in the **update-pipeline research stage**. It provides the transp
 
 | Component | Path | Purpose |
 | --- | --- | --- |
-| Android head-unit app | `app/` | Picks, pre-checks, streams, queries, applies and cleans up cluster update jobs |
-| Host lab service | `instrument/` | A Python reference implementation of the cluster-side update service, bound to `127.0.0.1` only, operating on a sandbox directory |
-| Native video core | `instrument/native/` | Independent C99 BVL1/LHF2 validation and loopback receiving, checked with real host H.264 decoding; not QNX firmware |
-| SDK-independent ARM build | `tools/qnx66_build.py` | Clang/LLD links a minimal probe and validation library against an external original runtime; QNX execution remains unverified |
-| FUP2 packaging tool | `instrument/openbyddisplay/packages.py` | Generates Ed25519 keys and builds signed, target-bound FUP2 component packages |
-| Release tooling | `tools/`, `.github/workflows/` | CI, signed-APK release pipeline and release-asset generation |
+| Android head-unit app | `headunit/` | Picks, pre-checks, streams, queries, applies and cleans up cluster update jobs |
+| Host lab service | `firmware/` | A Python reference implementation of the cluster-side update service, bound to `127.0.0.1` only, operating on a sandbox directory |
+| Native video core | `firmware/native/` | Independent C99 BVL1/LHF2 validation and loopback receiving, checked with real host H.264 decoding; not QNX firmware |
+| SDK-independent ARM build | `firmware/tools/qnx66_build.py` | Clang/LLD links an ARM32 probe, media library and single-session TCP/stdin player against an external original runtime; QNX execution remains unverified |
+| FUP2 packaging tool | `firmware/openbyddisplay/packages.py` | Generates Ed25519 keys and builds signed, target-bound FUP2 component packages |
+| Release tooling | `headunit/tools/`, `.github/workflows/` | CI, signed-APK release pipeline and release-asset generation |
 
 > [!IMPORTANT]
-> **There is currently no self-developed QNX firmware that can be flashed to a real car, and the new app has not passed an on-vehicle display acceptance test.** The `instrument/` service is a laboratory program, not a cluster image. It never runs a package's `install.sh`, never writes vehicle partitions and never touches boot records. Cast receiving/rendering on the cluster, a native QNX update backend and a full-vehicle recovery flow are still under development.
+> **There is currently no self-developed QNX firmware that can be flashed to a real car, and the new app has not passed an on-vehicle display acceptance test.** The `firmware/` service is a laboratory program, not a cluster image. It never runs a package's `install.sh`, never writes vehicle partitions and never touches boot records. Cast receiving/rendering on the cluster, a native QNX update backend and a full-vehicle recovery flow are still under development.
 
 ## Features
 
@@ -70,15 +70,15 @@ Implemented in this repository:
 
 Signature, digest, target-model and hardware checks are intentionally kept: they prevent tampering and mis-flashing. This project does **not** remove any third-party firmware's own authorization or trusted public keys; packages signed with your own key only work with a service that trusts that key.
 
-The [native receiver](instrument/native/README.md) now validates and receives BVL1/LHF2 streams on the host loopback interface. Tests decode real H.264 after receipt. The [instrument implementation notes](docs/instrument-native.md) describe the platform contracts derived from user-provided reference firmware.
+The [native receiver](firmware/native/README.md) now validates and receives BVL1/LHF2 streams on the host loopback interface. Tests decode real H.264 after receipt. The [instrument implementation notes](docs/instrument-native.md) describe the platform contracts derived from user-provided reference firmware.
 
 The [SDK-independent build experiment](docs/qnx66-open-toolchain.md) produces ARM32 ELF files using Clang, LLD and an externally supplied original runtime. CPU-model tests do not execute the QNX loader or libc. Vendor runtime files and build-only library views are not distributed.
 
-**Not yet implemented here:** QNX H.264 receiving/rendering, navigation and lyrics casting, fly-screen layout, vignette mask, flashable QNX firmware, automatic OTA.
+**Not yet verified on QNX:** native H.264 receiving/rendering. **Not yet implemented here:** navigation and lyrics casting, fly-screen layout, vignette mask, flashable QNX firmware, automatic OTA.
 
 ## Supported vehicles and requirements
 
-Each target has its own profile in [`instrument/targets.json`](instrument/targets.json). The two targets are **not interchangeable** — a matching firmware filename, OS hash or version string is not proof of compatible cluster hardware.
+Each target has its own profile in [`firmware/targets.json`](firmware/targets.json). The two targets are **not interchangeable** — a matching firmware filename, OS hash or version string is not proof of compatible cluster hardware.
 
 | Target ID | Vehicle | Status |
 | --- | --- | --- |
@@ -95,7 +95,7 @@ Each target has its own profile in [`instrument/targets.json`](instrument/target
 
 - JDK 17
 - Android SDK Platform 34 and Build-Tools 34.0.0 (Android Gradle Plugin 8.2.2, Kotlin 1.9.22, via the bundled Gradle wrapper)
-- Python 3.12 (dependency: `cryptography`, see [`instrument/requirements.txt`](instrument/requirements.txt))
+- Python 3.12 (dependency: `cryptography`, see [`firmware/requirements.txt`](firmware/requirements.txt))
 
 ## Build and install
 
@@ -108,16 +108,16 @@ Development artifacts from CI are signed differently from release APKs; use the 
 
 ### Build from source
 
-Create your own `local.properties` (pointing at your Android SDK) and a Python virtual environment, then:
+Create your own `headunit/local.properties` (pointing at your Android SDK) and a Python virtual environment, then:
 
 ```sh
-python3 -m pip install -r instrument/requirements.txt
-python3 -m unittest discover -s tools/tests -v
-PYTHONPATH=instrument python3 -m unittest discover -s instrument/tests -v
-./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+python3 -m pip install -r firmware/requirements.txt
+python3 -m unittest discover -s headunit/tools/tests -v
+PYTHONPATH=firmware python3 -m unittest discover -s firmware/tests -v
+./headunit/gradlew -p headunit :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
 ```
 
-The debug APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
+The debug APK is written to `headunit/app/build/outputs/apk/debug/app-debug.apk`.
 
 Passing `-PusbTestInstall=true` builds a side-by-side development variant with package `org.openbyddisplay.usbtest` and the label *OpenBYDDisplay · 开发版*.
 
@@ -147,7 +147,7 @@ Status meanings: `ready` means the cluster validated the package and is waiting 
 You can exercise the full update flow against the laboratory service on a computer. From the repository root:
 
 ```sh
-export PYTHONPATH=instrument
+export PYTHONPATH=firmware
 python3 -m openbyddisplay.packages keygen lab-state/keys
 mkdir -p lab-state/source
 echo 'OpenBYDDisplay development data' > lab-state/source/version.txt
@@ -172,7 +172,7 @@ For the Tang target use `tang-plus-dmi-2021` with a separate output package and 
 │   ▼                                  │   lines +   │  status / apply / cancel     │
 │ InstrumentUpdateService (foreground) │  raw bytes  │  cast.status                 │
 │   ├─ InstrumentUpdatePackage  ──────►│◄───────────►│                              │
-│   │    ZIP/SV & FUP2 pre-check       │             │ today: instrument/ Python    │
+│   │    ZIP/SV & FUP2 pre-check       │             │ today: firmware/ Python    │
 │   ├─ InstrumentUpdateClient          │             │ lab service on 127.0.0.1,    │
 │   │    streaming socket transport    │             │ sandbox only                 │
 │   ├─ InstrumentUpdateProtocol        │             │                              │
@@ -193,17 +193,15 @@ Full specification: [docs/update-protocol.md](docs/update-protocol.md).
 ### Repository layout
 
 ```
-app/                  Android head-unit app (Kotlin) and unit tests
-instrument/           Host lab service, FUP2 packager, target profiles, tests
-tools/                Release signing preparation and asset generation
+headunit/             Android project, ADB/release tools, public signing fingerprint
+firmware/             Native cluster code, open toolchain and installation laboratories
 docs/                 Protocol, lab, distribution docs and release notes
-config/               Public release-certificate SHA-256 fingerprint
 LICENSES/, NOTICE     Third-party licenses and attribution
 ```
 
 ### Roadmap
 
-Before any flashable package for a specific cluster is published, the project needs a legitimate QNX toolchain, a native port of the service, a platform install backend, real cluster hardware identification, a recovery entry independent of the update partition, and separate verification on each target vehicle. Cluster-side casting (navigation, lyrics, fly-screen, vignette mask) builds on top of that.
+The open ARM build/link pipeline and native media adapter are implemented. Flashable packages still require actual QNX loading, decoder/window validation, native installation/recovery integration for verified hardware, and separate vehicle tests. Cluster-side casting (navigation, lyrics, fly-screen, vignette mask) builds on top of that.
 
 ## Contributing
 
@@ -236,3 +234,5 @@ If you find the project useful, you can sponsor it on [Afdian (爱发电)](https
 ## License
 
 [MIT License](LICENSE). The original author's and contributors' copyright notices are retained; see [NOTICE](NOTICE). The initial Android update-client core is derived from the author's MIT-licensed `xiaohuihui-cluster-cast`. Gradle wrapper, Kotlin and AndroidX components are used under the [Apache License 2.0](LICENSES/Apache-2.0.txt).
+
+The source is split into [headunit](headunit/README.md) and [firmware](firmware/README.md). See [native media](docs/native-media.md) and [incremental transactions](docs/incremental-install.md) for offline evidence and target-validation boundaries.
