@@ -58,13 +58,16 @@ int obd_io_retry(obd_io *io) {
 int obd_io_wait(obd_io *io,int fd,short events) {
     for(;;) {
         uint64_t now=io->api.now();
-        if((io->cancel && *io->cancel) || !now || now>=io->deadline) return -1;
+        if(io->cancel && *io->cancel) return OBD_IO_CANCELLED;
+        if(!now) return OBD_IO_FAILED;
+        if(now>=io->deadline) return OBD_IO_TIMEOUT;
         int timeout=io->deadline-now>5000?5000:(int)(io->deadline-now);
         obd_pollfd p={fd,events,0};
         int result=io->api.poll(&p,1,timeout);
-        if(io->cancel && *io->cancel) return -1;
+        if(io->cancel && *io->cancel) return OBD_IO_CANCELLED;
         if(result<0) { if(io->api.error()==EINTR) continue; return -1; }
-        if(!result || p.revents&0x28) return -1;
+        if(!result) return OBD_IO_TIMEOUT;
+        if(p.revents&0x28) return OBD_IO_FAILED;
         if(p.revents&events) return 0;
         if(p.revents&0x10) return events==1?0:-1; /* Drain read bytes before EOF. */
     }

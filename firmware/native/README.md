@@ -26,8 +26,8 @@ ready回复为JSON行，标明`backend=host-file`、`decoded=false`、`visual_ve
 
 每次写入并flush文件后回`accepted_sequence`，只表示当前host sink接收，后续会话失败仍会删除不完整文件。EOS为长度0、序号0xffffffff、其余0；也接受完整帧边界EOF。EOF路径需发送方半关闭写端以继续读取最终回复。EOS终止会话，不再处理后续字节。至少接收一帧才能成功。
 
-仍需Android编码发送端、已实现QNX媒体后端的实机验证，以及USB角色和生产恢复适配。旧RTSP/TLS/RGB565/DIC1原型不迁入本路线。现有App只包含更新客户端，本目录尚未接入App的视频传输。平台参考及剩余边界见[仪表固件实现](../../docs/instrument-native.md)。
+Android编码发送已通过Kotlin→C持续会话与真实AVC离线互通；仍需Android和QNX媒体后端的设备验证，以及USB角色和生产恢复适配。旧RTSP/TLS/RGB565/DIC1原型不迁入本路线。App通过`--serve`使用同一C引擎的持续模式，能力与边界见[投屏说明](../../docs/casting.md)。平台参考及剩余边界见[仪表固件实现](../../docs/instrument-native.md)。
 
-`qnx66/`包含独立C入口、探针、单会话TCP/stdin播放器与媒体适配，使用Clang、LLD和外部原机运行库完成ARM32编译与链接，无需官方SDK。复现方法和验证边界见[开放工具链实验](../../docs/qnx66-open-toolchain.md)。它尚未在QNX运行，不能当作已验收固件。媒体路径与测试说明见[原生媒体](../../docs/native-media.md)。
+`qnx66/`包含独立C入口、探针、持续/短会话TCP及stdin播放器与媒体适配，使用Clang、LLD和外部原机运行库完成ARM32编译与链接，无需官方SDK。复现方法和验证边界见[开放工具链实验](../../docs/qnx66-open-toolchain.md)。它尚未在QNX运行，不能当作已验收固件。媒体路径与测试说明见[原生媒体](../../docs/native-media.md)。
 
 熊猫材料仅用于确定互操作格式和平台契约。两个车型分别核实硬件、QNX ABI、解码库、显示器/窗口组和刷写恢复入口；静态样本中的1920×720、display ID=2不是通用的实车配置。目标平台验证前，不标记为原生可运行，也不生成面向实车的刷机包。

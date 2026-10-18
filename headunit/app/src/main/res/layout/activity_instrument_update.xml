@@ -7,15 +7,20 @@
         <EditText android:id="@+id/updateHost" android:layout_width="match_parent" android:layout_height="56dp" android:inputType="textUri" android:singleLine="true" android:hint="仪表地址" android:textColor="@color/text_primary" android:textColorHint="@color/text_secondary" />
 
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="16dp" android:text="投屏（自研协议）" android:textSize="18sp" android:textColor="@color/text_primary" android:textStyle="bold" />
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingBottom="8dp" android:text="MediaProjection→H.264→BVL1/LHF2。需仪表侧有匹配接收服务；当前未标记可刷生产固件。" android:textSize="14sp" android:textColor="@color/text_secondary" />
-        <Switch android:id="@+id/castFullWidth" android:layout_width="match_parent" android:layout_height="48dp" android:text="全宽方案（按仪表实际 profile 面积选择）" android:checked="true" android:textColor="@color/text_primary" />
-        <Switch android:id="@+id/castSoftEdge" android:layout_width="match_parent" android:layout_height="48dp" android:text="柔边/暗边（本机 procedural 遮罩）" android:checked="true" android:textColor="@color/text_primary" />
-        <Switch android:id="@+id/castLyrics" android:layout_width="match_parent" android:layout_height="48dp" android:text="歌词叠加实验（music.show）" android:checked="false" android:textColor="@color/text_primary" />
-        <Switch android:id="@+id/castNav" android:layout_width="match_parent" android:layout_height="48dp" android:text="简易导航叠加实验（navigation.show）" android:checked="false" android:textColor="@color/text_primary" />
-        <Switch android:id="@+id/castAutoReconnect" android:layout_width="match_parent" android:layout_height="48dp" android:text="断线后自动重连（偏好项，实车待验）" android:checked="true" android:textColor="@color/text_primary" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingBottom="8dp" android:text="支持屏幕镜像、地图独立副屏、高德飞屏版副地图和动态标定图。需要匹配的自研仪表接收服务；当前版本尚待实车测试。" android:textSize="14sp" android:textColor="@color/text_secondary" />
+        <Switch android:id="@+id/castFullWidth" android:layout_width="match_parent" android:layout_height="48dp" android:text="填满仪表标定区域（关闭使用小窗口）" android:checked="true" android:textColor="@color/text_primary" />
+        <Switch android:id="@+id/castSoftEdge" android:layout_width="match_parent" android:layout_height="48dp" android:text="黑色柔边" android:checked="true" android:textColor="@color/text_primary" />
+        <Switch android:id="@+id/castLyrics" android:layout_width="match_parent" android:layout_height="48dp" android:text="显示当前音乐及本地 LRC 歌词" android:checked="false" android:textColor="@color/text_primary" />
+        <Switch android:id="@+id/castNav" android:layout_width="match_parent" android:layout_height="48dp" android:text="显示高德导航文字（需地图广播数据）" android:checked="false" android:textColor="@color/text_primary" />
+        <Switch android:id="@+id/castAutoReconnect" android:layout_width="match_parent" android:layout_height="48dp" android:text="断线后重试连接（最多连续 3 次）" android:checked="true" android:textColor="@color/text_primary" />
+        <Button android:id="@+id/castOptions" android:layout_width="match_parent" android:layout_height="52dp" android:text="画面来源、布局与画质设置" />
+        <Button android:id="@+id/castMediaAccess" android:layout_width="match_parent" android:layout_height="52dp" android:text="允许读取当前音乐（通知使用权）" />
+        <Button android:id="@+id/castLrc" android:layout_width="match_parent" android:layout_height="52dp" android:text="导入本地歌词（歌曲标题.lrc）" />
+        <Button android:id="@+id/castMapAdb" android:layout_width="match_parent" android:layout_height="52dp" android:text="复制地图副屏 ADB 启动命令" />
         <Button android:id="@+id/castStart" android:layout_width="match_parent" android:layout_height="52dp" android:text="开始投屏" />
         <Button android:id="@+id/castStop" android:layout_width="match_parent" android:layout_height="52dp" android:text="停止投屏" />
-        <Button android:id="@+id/castProbe" android:layout_width="match_parent" android:layout_height="52dp" android:text="探测仪表版本 / cast.status" />
+        <Button android:id="@+id/castProbe" android:layout_width="match_parent" android:layout_height="52dp" android:text="检测自研视频服务" />
+        <Button android:id="@+id/castRecovery" android:layout_width="match_parent" android:layout_height="52dp" android:text="核对投屏中断后的恢复状态" android:visibility="gone" />
         <TextView android:id="@+id/castStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="8dp" android:paddingBottom="16dp" android:textSize="14sp" android:textColor="@color/text_primary" android:textIsSelectable="true" />
 
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="8dp" android:text="仪表更新" android:textSize="18sp" android:textColor="@color/text_primary" android:textStyle="bold" />

@@ -1,12 +1,12 @@
 # 自研仪表解码显示适配
 
-`firmware/native/qnx66/`已实现mm-renderer、mdevpush和Screen的独立C适配，以及单次BVL1/LHF2会话播放器。它通过Clang/LLD链接原始ARM32 libc，不使用官方SDK或复制厂商程序。**真实QNX、解码插件和仪表窗口仍待接机测试。**
+`firmware/native/qnx66/`已实现mm-renderer、mdevpush和Screen的独立C适配，以及支持短会话和持续接收的BVL1/LHF2播放器。它通过Clang/LLD链接原始ARM32 libc，不使用官方SDK或复制厂商程序。**真实QNX、解码插件和仪表窗口仍待接机测试。**
 
 ## 已实现的路径
 
 `BVL1/LHF2 → CRC/序号/NAL校验 → 有超时的mdevpush IPC → mm-renderer → 本会话Screen窗口`
 
-播放器可从stdin读取，也可显式绑定本机一个私有IPv4地址，接受一次TCP连接。不会设置USB角色、修改接口地址、写OEM PPS、修改其他应用窗口或注册自启。监听等待30秒，输入每次I/O最多5秒并受30秒输入期限约束，最多60帧、每帧2MiB。Screen/mm-renderer库调用的阻塞与停止行为仍需QNX验证；这些不是整个进程的硬期限。
+播放器可从stdin读取，或显式绑定本机私有IPv4。`--tcp`接受一次连接；`--serve`保留监听socket串行接受会话。不会设置USB角色、修改接口地址、写OEM PPS、修改其他应用窗口或注册自启。短测试监听等待30秒，输入每次I/O最多5秒并受30秒输入期限约束，最多60帧。持续模式空闲监听可继续等待，每次输入/输出事务有限期，支持空闲心跳、配置与显式结束；单帧仍限2MiB。Screen/mm-renderer库调用的阻塞与停止行为仍需QNX验证；这些不是整个进程的硬期限。
 
 握手只接受`BVL1`＋BE正文长度15＋精确`{"op":"stream"}`＋四个BE u32编码宽、高、FPS、reserved=0。ready在格式描述提交后发出；每帧IPC成功后返回ack和accepted_sequence，并推进序号。EOF不等同EOS，本播放器要求显式LHF2 EOS。只有所属子窗口出现、属性回读成功且观察到Screen POST后，EOS才可能成功；完成消息在资源清理成功之后发送。始终保留`visual_verified=false`。
 
@@ -30,6 +30,8 @@
 # 电脑端发送最多60帧、带AUD分隔的Annex-B H.264；尺寸/FPS必须与文件一致
 python3 firmware/tools/send_video.py 192.168.77.1 input.h264 --width 1280 --height 480 --fps 15
 ```
+
+持续接收将上述`--tcp`替换成`--serve`；此模式专用于配合自研App进行开发验证，不自动注册系统服务。操作者必须先核对允许窗口范围；App配置只能在这个范围内收缩/移动。详细控制帧见[投屏协议](casting.md)。
 
 参数中的Z=3仅演示语法，不代表OEM允许的正确层级。Qt/Kanzi/HMI协作、窗口合成、警告保留、USB角色、真实库内部线程/阻塞、异常信号及断线恢复均需目标验证。库符号缺失、插件拒流或属性不能设置时失败退出；不要通过替换原机库来消除错误。
 

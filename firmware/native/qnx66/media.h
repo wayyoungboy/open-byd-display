@@ -67,6 +67,7 @@ typedef struct {
 int obd_media_open(obd_media *, const obd_media_api *, const obd_media_config *);
 int obd_media_submit(obd_media *, const obd_lhf2_frame *, const uint8_t *, size_t);
 int obd_media_events(obd_media *);
+int obd_media_window(obd_media *, int x, int y, int width, int height, int opacity);
 int obd_media_close(obd_media *);
 int obd_media_load(obd_media_api *, void *libraries[4]);
 void obd_media_unload(void *libraries[4]);

@@ -1,8 +1,8 @@
 OpenBYDDisplay
 Copyright (c) 2026 OpenBYDDisplay contributors
 
-The initial Android update-client core is derived from independently authored
-code in wayyoungboy/xiaohuihui-cluster-cast under its MIT license.
+The Android update-client core, frame renderer, and selected casting helpers
+are derived from independently authored code in wayyoungboy/xiaohuihui-cluster-cast under its MIT license.
 Copyright (c) 2026 wayyoungboy / wayyoung的小灰灰开源工具 contributors.
 The original MIT copyright and permission notice is preserved in LICENSE.
 

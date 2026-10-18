@@ -2,6 +2,10 @@
 #include "io.h"
 #include <stdint.h>
 #include <string.h>
+#ifdef OBD_IO_HOST
+#include <sys/socket.h>
+#include <netinet/in.h>
+#endif
 extern void *dlopen(const char *, int);
 extern void *dlsym(void *, const char *);
 extern int dlclose(void *);
@@ -35,16 +39,33 @@ int obd_video_ipv4(const char *address, unsigned port, unsigned char bytes[16]) 
     memcpy(bytes,&local,sizeof(local));
     return 0;
 }
-int obd_video_accept(const char *address, unsigned port, void **library, const volatile int *cancel) {
-    if(!library) return -1;
-    *library=0;
+int obd_video_listen(const char *address,unsigned port,obd_video_listener *listener) {
+    if(!listener) return -1;
+    memset(listener,0,sizeof(*listener)); listener->fd=-1;
     unsigned char local[16];
-    if(obd_video_ipv4(address,port,local)) return -1;
+    if(obd_video_ipv4(address,port,local)) {
+#ifdef OBD_IO_HOST
+        if(port || obd_video_ipv4(address,1024,local)) return -1;
+        local[2]=local[3]=0; /* Ephemeral port for host tests only. */
+#else
+        return -1;
+#endif
+    }
     int (*socket_fn)(int,int,int)=0;
     int (*bind_fn)(int,const void *,unsigned)=0;
     int (*listen_fn)(int,int)=0;
     int (*accept_fn)(int,void *,unsigned *)=0;
+#ifdef OBD_IO_HOST
+    void *handle=dlopen(0,2);
+    struct sockaddr_in native; memset(&native,0,sizeof(native));
+    native.sin_family=AF_INET;
+#ifdef __APPLE__
+    native.sin_len=sizeof(native);
+#endif
+    memcpy(&native.sin_port,local+2,2); memcpy(&native.sin_addr,local+4,4);
+#else
     void *handle=dlopen("/base/lib/libsocket.so.3",2);
+#endif
     if(!handle) return -1;
 #define LOAD(field,name) do { void *p=dlsym(handle,name); \
     typedef char same_size[sizeof(field)==sizeof(p)?1:-1]; (void)sizeof(same_size); \
@@ -53,25 +74,52 @@ int obd_video_accept(const char *address, unsigned port, void **library, const v
     LOAD(socket_fn,"socket"); LOAD(bind_fn,"bind");
     LOAD(listen_fn,"listen"); LOAD(accept_fn,"accept");
 #undef LOAD
-    obd_io io; obd_io_platform(&io.api); io.cancel=cancel;
-    io.deadline=io.api.now();
-    if(!io.deadline) goto failed;
-    io.deadline+=30000;
-    int fd=socket_fn(2,1,0), client=-1,flags;
-    if(fd<0) goto failed;
-    if(!obd_io_nonblock(fd,&flags) && !bind_fn(fd,local,sizeof(local)) && !listen_fn(fd,1)) {
-        while(!obd_io_wait(&io,fd,1)) {
-            client=accept_fn(fd,0,0);
-            if(client>=0) break;
-            if(!obd_io_retry(&io)) break;
-        }
-    }
-    close(fd);
-    if(client<0) goto failed;
-    if(obd_io_nonblock(client,&flags)) { close(client); goto failed; }
-    *library=handle;
-    return client;
+    int flags;
+    listener->fd=socket_fn(2,1,0);
+    if(listener->fd<0 || obd_io_nonblock(listener->fd,&flags)) goto failed;
+#ifdef OBD_IO_HOST
+    if(bind_fn(listener->fd,&native,sizeof(native))) goto failed;
+#else
+    if(bind_fn(listener->fd,local,sizeof(local))) goto failed;
+#endif
+    if(listen_fn(listener->fd,1)) goto failed;
+    listener->library=handle; listener->accept_fn=accept_fn;
+    return 0;
 failed:
+    if(listener->fd>=0) close(listener->fd);
+    listener->fd=-1;
     dlclose(handle); return -1;
+}
+int obd_video_next(obd_video_listener *listener,const volatile int *cancel) {
+    if(!listener || listener->fd<0 || !listener->library || !listener->accept_fn) return OBD_IO_FAILED;
+    obd_io io; obd_io_platform(&io.api); io.cancel=cancel;
+    uint64_t now=io.api.now();
+    if(!now) return OBD_IO_FAILED;
+    io.deadline=now+30000;
+    for(;;) {
+        int status=obd_io_wait(&io,listener->fd,1);
+        if(status==OBD_IO_TIMEOUT && io.api.now()<io.deadline) continue;
+        if(status) return status;
+        int client=listener->accept_fn(listener->fd,0,0),flags;
+        if(client<0) { if(obd_io_retry(&io)) continue; return OBD_IO_FAILED; }
+        if(obd_io_nonblock(client,&flags)) { close(client); return OBD_IO_FAILED; }
+        return client;
+    }
+}
+void obd_video_listener_close(obd_video_listener *listener) {
+    if(!listener) return;
+    if(listener->fd>=0) close(listener->fd);
+    if(listener->library) dlclose(listener->library);
+    memset(listener,0,sizeof(*listener)); listener->fd=-1;
+}
+int obd_video_accept(const char *address,unsigned port,void **library,const volatile int *cancel) {
+    if(!library) return -1;
+    *library=0;
+    obd_video_listener listener;
+    if(obd_video_listen(address,port,&listener)) return -1;
+    int fd=obd_video_next(&listener,cancel);
+    if(fd<0) { obd_video_listener_close(&listener); return fd; }
+    close(listener.fd); *library=listener.library;
+    return fd;
 }
 void obd_video_network_close(void *library) { if(library) dlclose(library); }

@@ -70,7 +70,8 @@ int obd_media_close(obd_media *m) {
     if (m->parent) { if(m->api.screen_destroy_window(m->parent)) error=-1; m->parent=0; }
     if (m->event) { if(m->api.screen_destroy_event(m->event)) error=-1; m->event=0; }
     if (m->screen) { if(m->api.screen_destroy_context(m->screen)) error=-1; m->screen=0; }
-    return error;
+    if(error) m->failed=2; /* A failed cleanup remains unconfirmed on repeat calls. */
+    return m->failed==2 ? -1 : 0;
 }
 int obd_media_open(obd_media *m, const obd_media_api *a, const obd_media_config *c) {
     if (!m || !a) return -1;
@@ -178,6 +179,15 @@ static int geometry(obd_media *m) {
         set(m,m->child,VISIBLE,1,0) || set(m,m->parent,VISIBLE,1,0) ||
         m->api.screen_flush_context(m->screen,1)) return -1;
     return readback(m);
+}
+int obd_media_window(obd_media *m,int x,int y,int width,int height,int opacity) {
+    if(!m || !m->ready || m->failed) return -1;
+    obd_media_config next=m->config;
+    next.x=x; next.y=y; next.width=width; next.height=height; next.opacity=opacity;
+    if(!valid(&next)) return -1;
+    m->config=next;
+    if(m->child && geometry(m)) { m->failed=1; obd_media_close(m); return -1; }
+    return 0;
 }
 int obd_media_events(obd_media *m) {
     if (!m || !m->ready || m->failed) return -1;
