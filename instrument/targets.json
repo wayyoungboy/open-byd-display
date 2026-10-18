@@ -1,0 +1,14 @@
+{
+  "song-plus-dmi-2021": {
+    "display_name": "21款宋 PLUS DM-i",
+    "instrument_hardware_verified": false,
+    "qnx_native_build_verified": false,
+    "vehicle_flash_verified": false
+  },
+  "tang-plus-dmi-2021": {
+    "display_name": "21款唐 PLUS DM-i（用户提供名称，具体车型和仪表型号待核实）",
+    "instrument_hardware_verified": false,
+    "qnx_native_build_verified": false,
+    "vehicle_flash_verified": false
+  }
+}

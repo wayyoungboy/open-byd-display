@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg_root">#0D1519</color>
+    <color name="bg_sidebar">#101C21</color>
+    <color name="bg_surface">#17262C</color>
+    <color name="text_primary">#EFF5F2</color>
+    <color name="text_secondary">#A0B5B5</color>
+    <color name="accent">#82DCC1</color>
+    <color name="ok_green">#82DCC1</color>
+    <color name="warn_amber">#EBCB93</color>
+    <color name="bad_red">#EE9F9F</color>
+</resources>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@color/bg_root">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="24dp">
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="OpenBYDDisplay · 仪表更新" android:textSize="24sp" android:textColor="@color/text_primary" android:textStyle="bold" />
+        <TextView android:id="@+id/projectRiskNotice" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="16dp" android:paddingBottom="16dp" android:text="@string/project_risk_notice" android:textSize="16sp" android:textColor="@color/warn_amber" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="连接自研仪表服务，无登录、VIP或商业许可证。" android:textSize="16sp" android:textColor="@color/text_secondary" />
+        <EditText android:id="@+id/updateHost" android:layout_width="match_parent" android:layout_height="56dp" android:inputType="textUri" android:singleLine="true" android:hint="仪表地址" android:textColor="@color/text_primary" android:textColorHint="@color/text_secondary" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="12dp" android:paddingBottom="16dp" android:text="仅使用与当前仪表车型、硬件匹配的更新包。先停止投屏；安装期间保持供电与连接。上传与安装分开操作。" android:textSize="16sp" android:textColor="@color/text_secondary" />
+        <Button android:id="@+id/updateInfo" android:layout_width="match_parent" android:layout_height="52dp" android:text="检查仪表更新能力" />
+        <Button android:id="@+id/updateGitHub" android:layout_width="match_parent" android:layout_height="52dp" android:text="GitHub 发布与下载" />
+        <Button android:id="@+id/updatePick" android:layout_width="match_parent" android:layout_height="52dp" android:text="选择并检查更新包（ZIP / FUP）" />
+        <Button android:id="@+id/updateUpload" android:layout_width="match_parent" android:layout_height="52dp" android:text="上传到仪表并校验" android:enabled="false" />
+        <Button android:id="@+id/updateRefresh" android:layout_width="match_parent" android:layout_height="52dp" android:text="刷新本次任务状态" android:enabled="false" />
+        <CheckBox android:id="@+id/updateParked" android:layout_width="match_parent" android:layout_height="56dp" android:text="我已停车，已核对当前车型及仪表硬件" android:checked="false" android:textColor="@color/text_primary" />
+        <Button android:id="@+id/updateApply" android:layout_width="match_parent" android:layout_height="52dp" android:text="安装到仪表" android:enabled="false" />
+        <Button android:id="@+id/updateCancel" android:layout_width="match_parent" android:layout_height="52dp" android:text="停止传输 / 清除暂存包" android:enabled="false" />
+        <TextView android:id="@+id/updateStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="20dp" android:textSize="16sp" android:textColor="@color/text_primary" android:textIsSelectable="true" />
+    </LinearLayout>
+</ScrollView>
