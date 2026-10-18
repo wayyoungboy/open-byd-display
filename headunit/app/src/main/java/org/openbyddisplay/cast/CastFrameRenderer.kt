@@ -21,12 +21,13 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
-/** Independent source scaling, horizontal reflection and encoded black edge fade. */
+/** Independent source scaling, horizontal reflection and theme-colored encoded edge fade. */
 internal class CastFrameRenderer(
     private val sourceWidth: Int, private val sourceHeight: Int,
     private val targetWidth: Int, private val targetHeight: Int,
     private val target: Surface, private val fps: Int,
     private val edgeFraction: Float, private val flip: Boolean,
+    private val edgeRgb: () -> Int,
     private val overlay: () -> List<String>,
     private val onError: (String) -> Unit
 ) : AutoCloseable {
@@ -117,12 +118,13 @@ internal class CastFrameRenderer(
             precision mediump float;
             uniform samplerExternalOES uTexture;
             uniform float uEdge;
+            uniform vec3 uEdgeColor;
             varying vec2 vPosition;
             varying vec2 vTexture;
             void main() {
                 float distance = min(min(vPosition.x, 1.0-vPosition.x), min(vPosition.y, 1.0-vPosition.y));
                 float fade = uEdge > 0.0 ? smoothstep(0.0, uEdge, distance) : 1.0;
-                gl_FragColor = vec4(texture2D(uTexture, vTexture).rgb * fade, 1.0);
+                gl_FragColor = vec4(mix(uEdgeColor, texture2D(uTexture, vTexture).rgb, fade), 1.0);
             }
         """.trimIndent())
         program = GLES20.glCreateProgram()
@@ -186,6 +188,9 @@ internal class CastFrameRenderer(
             GLES20.glUniform1i(GLES20.glGetUniformLocation(program, "uTexture"), 0)
             GLES20.glUniform1f(GLES20.glGetUniformLocation(program, "uFlip"), if (flip) 1f else 0f)
             GLES20.glUniform1f(GLES20.glGetUniformLocation(program, "uEdge"), edgeFraction)
+            val color = edgeRgb()
+            GLES20.glUniform3f(GLES20.glGetUniformLocation(program, "uEdgeColor"),
+                ((color shr 16) and 255) / 255f, ((color shr 8) and 255) / 255f, (color and 255) / 255f)
             GLES20.glUniformMatrix4fv(GLES20.glGetUniformLocation(program, "uMatrix"), 1, false, matrix, 0)
             val position = GLES20.glGetAttribLocation(program, "aPosition")
             val coordinate = GLES20.glGetAttribLocation(program, "aTexture")

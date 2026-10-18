@@ -9,6 +9,10 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
     <application android:allowBackup="false" android:label="${appLabel}" android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.NoActionBar" android:usesCleartextTraffic="true">
         <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:configChanges="orientation|screenSize|keyboardHidden">
@@ -18,6 +22,18 @@
             </intent-filter>
         </activity>
         <activity android:name=".cast.CaptureGrantActivity" android:exported="false" android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <activity android:name=".ambient.AmbientLightActivity" android:exported="false" />
+        <activity android:name=".vehicle.VehicleSettingsActivity" android:exported="false" />
+        <service android:name=".vehicle.UsbSwitchService" android:exported="false" android:foregroundServiceType="connectedDevice" />
+        <service android:name=".vehicle.HeadlightFollowService" android:exported="false" android:foregroundServiceType="connectedDevice" />
+        <service android:name=".vehicle.VehicleRestoreService" android:exported="false" android:foregroundServiceType="connectedDevice" />
+        <receiver android:name=".vehicle.VehicleRestoreReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.USER_PRESENT" />
+            </intent-filter>
+        </receiver>
+        <service android:name=".ambient.AmbientLightService" android:exported="false" android:foregroundServiceType="connectedDevice|microphone" />
         <receiver android:name=".BootReceiver" android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />

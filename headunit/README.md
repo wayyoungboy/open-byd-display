@@ -2,6 +2,8 @@
 
 Android源码、Gradle工程、自启/ADB助手、发布签名配置及APK发布工具均在本目录。包名与稳定发布签名规则不变；目录调整不会要求卸载旧App。
 
+0.1.4 开发源码增加[氛围灯](../docs/ambient-light.md)和[USB/系统接口](../docs/vehicle-interfaces.md)。尚未发布此版本 Release，也未完成本项目实车验证；全部迁移差异见[清单](../docs/feature-migration.md)。定制开发请联系作者，定制类仪表固件需要收费。
+
 在仓库根目录运行：
 
 ```sh

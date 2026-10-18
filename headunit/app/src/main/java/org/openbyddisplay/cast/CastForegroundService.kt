@@ -49,8 +49,9 @@ class CastForegroundService : Service() {
         val data = intent.getParcelableExtra<Intent>(EXTRA_DATA)
         val code = intent.getIntExtra(EXTRA_RESULT_CODE, 0)
         if ((options.source == "mirror" && (data == null || code != Activity.RESULT_OK)) ||
+            org.openbyddisplay.vehicle.UsbSwitchStore.blocked(this) ||
             !InstrumentUpdateStore.canReplace(InstrumentUpdateStore.read(this)) || !InstrumentOperation.acquire("cast")) {
-            started.set(false); CastSessionStore.idle(this, "请先结束更新任务，并取得本次录屏授权"); stopSelf(startId)
+            started.set(false); CastSessionStore.idle(this, "请先结束更新/USB 请求，并取得本次录屏授权"); stopSelf(startId)
             return START_NOT_STICKY
         }
         val run = Run()
@@ -96,8 +97,10 @@ class CastForegroundService : Service() {
             encoder = H264Encoder(width, height, options.fps, options.bitrate)
             encoder.start()
             current()
+            var lastEdgeRgb = VignettePalette.DARK_RGB
             renderer = CastFrameRenderer(width * options.renderScale, height * options.renderScale,
-                width, height, encoder.inputSurface!!, options.fps, options.softEdge / 100f, options.horizontalFlip, overlays::text) {
+                width, height, encoder.inputSurface!!, options.fps, options.softEdge / 100f, options.horizontalFlip,
+                { VignettePalette.fromUiMode(resources.configuration.uiMode, lastEdgeRgb).also { lastEdgeRgb = it } }, overlays::text) {
                 stop.set(true); active.get()?.close()
                 if (currentRun.get() === run) CastSessionStore.write(this, JSONObject().put("message", it).put("state", "error"))
             }

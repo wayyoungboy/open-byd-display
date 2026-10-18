@@ -38,6 +38,7 @@
 | 解码显示适配 | 持续/单会话TCP及stdin、mm-renderer/mdevpush、所属Screen窗口及失败清理；待仪表验证 |
 | 自研投屏客户端 | 镜像、独立地图/飞屏副地图、画质布局、真实音乐/LRC及导航文字、逐帧回执和重连；需匹配自研接收器 |
 | 增量安装实验 | 签名差量、基线绑定、完整代际重建、试启动确认及未确认回退 |
+| 车机灯控与系统接口（开发源码） | 动态多色、16 频带音乐、读回/恢复/手动让权；USB/NCM、深浅设置及大灯联动；原生律动未验证保持关闭 |
 
 仪表端投屏出画、QNX原生更新后端及整车恢复流程仍待验证或研发。Python更新实验服务只监听电脑回环地址、操作实验目录；原生播放器可显式绑定私有IPv4进行短测试或持续接收。两者均不运行包内`install.sh`、写车辆分区或修改启动记录。开机自启不会恢复上传、提交安装或自动投屏。
 
@@ -67,6 +68,8 @@
 | 你想做什么 | 入口 |
 | --- | --- |
 | 查看投屏能力、协议及待办 | [车机投屏](docs/casting.md) |
+| 核对迁移、发布和实车完成状态 | [功能清单与验收门槛](docs/feature-migration.md) |
+| 调试氛围灯、反馈与恢复 | [氛围灯实现](docs/ambient-light.md) / [车机车辆接口](docs/vehicle-interfaces.md) |
 | 配置ADB、开机自启 | [ADB与自启](docs/adb-and-startup.md) |
 | 运行电脑实验服务、制作自签名包 | [仪表端实验](docs/instrument-lab.md) |
 | 了解自研仪表固件与原生视频进度 | [固件实现](docs/instrument-native.md) / [原生核心](firmware/native/README.md) |
@@ -90,6 +93,8 @@ PYTHONPATH=firmware python3 -m unittest discover -s firmware/tests -v
 源码、评审、反馈及分发均通过GitHub。改动使用分支和PR，CI提供开发APK，版本标签触发使用稳定独立签名的Release构建。私钥不入Git；完整规则见[分发说明](docs/github-distribution.md)。
 
 ## 支持与贡献
+
+**定制开发请联系[作者](https://github.com/wayyoungboy)，定制类仪表固件需要收费。** 定制范围、费用和验收单独确认；本仓库开源代码继续按 MIT 许可提供。
 
 欢迎提交可复现的问题、协议研究和有权公开的代码。反馈请写明车型、仪表硬件与版本、车机系统、App版本、操作步骤和错误信息；发布日志前移除车辆标识、账号及密钥。请勿上传第三方APK、固件、反编译代码或商业许可证。
 

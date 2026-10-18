@@ -49,6 +49,15 @@ class MainActivity : Activity() {
             }
         }
         findViewById<Button>(R.id.startupAdb).setOnClickListener { showAdbHelp() }
+        findViewById<Button>(R.id.ambientOpen).setOnClickListener {
+            startActivity(Intent(this, org.openbyddisplay.ambient.AmbientLightActivity::class.java))
+        }
+        findViewById<Button>(R.id.vehicleOpen).setOnClickListener {
+            startActivity(Intent(this, org.openbyddisplay.vehicle.VehicleSettingsActivity::class.java))
+        }
+        findViewById<Button>(R.id.customSupport).setOnClickListener {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/wayyoungboy")))
+        }
         val hostField = findViewById<EditText>(R.id.updateHost)
         hostField.setText(CastSettings.host(this).ifBlank {
             getPreferences(MODE_PRIVATE).getString("host", CastPorts.DEFAULT_HOST)
@@ -210,7 +219,8 @@ class MainActivity : Activity() {
         val busy = InstrumentUpdateService.busy.get()
         val startupStatus = StartupController.status(this)
         val cleanupBlocked = CastSafetyStore.blocked(this)
-        val signature = state.toString() + busy + startupStatus + cast.toString() + cleanupBlocked +
+        val usbBlocked = org.openbyddisplay.vehicle.UsbSwitchStore.blocked(this) || org.openbyddisplay.vehicle.UsbSwitchService.busy.get()
+        val signature = state.toString() + busy + startupStatus + cast.toString() + cleanupBlocked + usbBlocked +
             findViewById<CheckBox>(R.id.updateParked).isChecked
         if (lastRender == signature) return
         lastRender = signature
@@ -223,7 +233,7 @@ class MainActivity : Activity() {
             if (cast.has("host")) append("\nhost=").append(cast.optString("host"))
         }
         val casting = CastSessionStore.busy
-        findViewById<Button>(R.id.castStart).isEnabled = !casting && !busy && InstrumentUpdateStore.canReplace(state)
+        findViewById<Button>(R.id.castStart).isEnabled = !casting && !busy && !usbBlocked && InstrumentUpdateStore.canReplace(state)
         listOf(R.id.castOptions, R.id.castProbe).forEach { findViewById<Button>(it).isEnabled = !casting && !busy }
         listOf(R.id.castFullWidth, R.id.castSoftEdge, R.id.castLyrics, R.id.castNav, R.id.castAutoReconnect).forEach { findViewById<Switch>(it).isEnabled = !casting }
         findViewById<Button>(R.id.castStop).isEnabled = casting
@@ -238,9 +248,9 @@ class MainActivity : Activity() {
         }
         findViewById<Button>(R.id.updatePick).isEnabled = !busy && !casting && InstrumentUpdateStore.canReplace(state)
         findViewById<Button>(R.id.updateInfo).isEnabled = !busy && !casting
-        findViewById<Button>(R.id.updateUpload).isEnabled = !busy && !casting && !cleanupBlocked && state.has("sha256") && !state.has("update_id")
+        findViewById<Button>(R.id.updateUpload).isEnabled = !busy && !casting && !usbBlocked && !cleanupBlocked && state.has("sha256") && !state.has("update_id")
         findViewById<Button>(R.id.updateRefresh).isEnabled = !busy && state.has("update_id")
-        findViewById<Button>(R.id.updateApply).isEnabled = !busy && !casting && !cleanupBlocked && !state.optBoolean("apply_attempted") &&
+        findViewById<Button>(R.id.updateApply).isEnabled = !busy && !casting && !usbBlocked && !cleanupBlocked && !state.optBoolean("apply_attempted") &&
             findViewById<CheckBox>(R.id.updateParked).isChecked && remote != null && InstrumentUpdateProtocol.canApply(remote)
         findViewById<Button>(R.id.updateCancel).isEnabled = state.has("update_id") && remote?.optString("stage") !in setOf("installing", "handed_off", "applied", "recovery_required")
     }
