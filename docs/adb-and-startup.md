@@ -8,10 +8,10 @@ Android10/API29及以上限制后台打开页面。本项目在系统允许悬�
 
 ```sh
 # 只读：选择设备、检查版本、应用、后台打开权限和IPv4网卡
-python3 tools/adb_setup.py --serial 车机序列号
+python3 headunit/tools/adb_setup.py --serial 车机序列号
 
 # 显式配置：允许本App的SYSTEM_ALERT_WINDOW app-op，并打开App
-python3 tools/adb_setup.py --serial 车机序列号 --configure-autostart
+python3 headunit/tools/adb_setup.py --serial 车机序列号 --configure-autostart
 ```
 
 然后在App中打开自启开关，重启车机验证。脚本不自动打开该开关。电脑上有多台设备时必须指定序列号；开发共存包加 `--package org.openbyddisplay.usbtest`，ADB不在PATH时加 `--adb /实际路径/adb`。Windows可用 `python` 代替 `python3`。

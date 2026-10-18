@@ -16,9 +16,9 @@ jobs:
           python-version: '3.12'
       - name: Install open ARM build tools
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends clang lld
-      - run: python -m pip install -r tools/qnx66-requirements.txt
+      - run: python -m pip install -r firmware/tools/qnx66-requirements.txt
       - name: Cross-link and check compiled ARM instructions using synthetic fixtures
-        run: python -m unittest discover -s tools/qnx66_tests -v
+        run: python -m unittest discover -s firmware/tools/qnx66_tests -v
   native-video:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -28,11 +28,16 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
       - name: Build and check native receiver on the host
         run: |
-          cmake -S instrument/native -B /tmp/openbyd-video-build -DOBD_SANITIZE=ON -DCMAKE_BUILD_TYPE=Debug
+          cmake -S firmware/native -B /tmp/openbyd-video-build -DOBD_SANITIZE=ON -DCMAKE_BUILD_TYPE=Debug
           cmake --build /tmp/openbyd-video-build
           ctest --test-dir /tmp/openbyd-video-build --output-on-failure
-          python3 -O instrument/native/tests/check_real_video.py /tmp/openbyd-video-build/obd-lhf2-unpack
-          python3 -O instrument/native/tests/check_tcp.py /tmp/openbyd-video-build/obd-bvl1-receive
+          python3 -O firmware/native/tests/check_real_video.py /tmp/openbyd-video-build/obd-lhf2-unpack
+          python3 -O firmware/native/tests/check_tcp.py /tmp/openbyd-video-build/obd-bvl1-receive
+      - name: Check optimized native build with NDEBUG
+        run: |
+          cmake -S firmware/native -B /tmp/openbyd-release-build -DOBD_SANITIZE=ON -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/openbyd-release-build
+          ctest --test-dir /tmp/openbyd-release-build --output-on-failure
   checks:
     runs-on: ubuntu-latest
     steps:
@@ -40,11 +45,11 @@ jobs:
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12'
-      - run: python -m pip install -r instrument/requirements.txt
-      - run: python -m unittest discover -s tools/tests -v
-      - run: python -m unittest discover -s instrument/tests -v
+      - run: python -m pip install -r firmware/requirements.txt
+      - run: python -m unittest discover -s headunit/tools/tests -v
+      - run: python -m unittest discover -s firmware/tests -v
         env:
-          PYTHONPATH: instrument
+          PYTHONPATH: firmware
       - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
         with:
           distribution: temurin
@@ -52,9 +57,9 @@ jobs:
       - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
         with:
           packages: platform-tools platforms;android-34 build-tools;34.0.0
-      - run: ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug --no-daemon --console=plain
+      - run: ./headunit/gradlew -p headunit :app:testDebugUnitTest :app:lintDebug :app:assembleDebug --no-daemon --console=plain
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: OpenBYDDisplay-development-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: headunit/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 14
