@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenBYDDisplay — 比亚迪仪表显示与车机互联开源项目</title>
+<meta name="description" content="OpenBYDDisplay：比亚迪仪表显示与车机互联开源项目。无需登录、VIP或商业许可证。当前为研发测试版。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0e14'/%3E%3Crect x='6' y='11' width='20' height='10' rx='2' fill='none' stroke='%236488B5' stroke-width='2'/%3E%3Ccircle cx='11' cy='16' r='1.6' fill='%2370e0c0'/%3E%3Ccircle cx='16' cy='16' r='1.6' fill='%2370e0c0'/%3E%3Ccircle cx='21' cy='16' r='1.6' fill='%2370e0c0'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#0b0e14; --bg2:#10151f; --panel:#141b28; --panel2:#1a2435;
+  --line:#243149; --text:#e6edf6; --muted:#8fa3bd; --accent:#6488B5;
+  --accent2:#70e0c0; --warn:#e0a04a; --danger:#e06a6a; --radius:16px;
+  --maxw:1120px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:radial-gradient(1200px 600px at 70% -10%,#17233a 0%,var(--bg) 55%) fixed,var(--bg);
+  color:var(--text);
+  font-family:"Segoe UI",system-ui,-apple-system,"PingFang SC","Microsoft YaHei",Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.65; -webkit-font-smoothing:antialiased;
+}
+a{color:var(--accent2);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 20px}
+section{padding:68px 0;border-top:1px solid rgba(255,255,255,.04)}
+h2{font-size:clamp(1.5rem,3vw,2rem);letter-spacing:.5px;margin-bottom:8px}
+h2 .sub{display:block;font-size:.95rem;color:var(--muted);font-weight:400;margin-top:6px}
+.lead{color:var(--muted);max-width:760px;margin-bottom:28px}
+
+/* nav */
+header.nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(12px);
+  background:rgba(11,14,20,.72);border-bottom:1px solid var(--line)}
+.nav .wrap{display:flex;align-items:center;gap:16px;height:60px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.5px}
+.brand svg{width:30px;height:30px}
+.nav nav{margin-left:auto;display:flex;gap:20px;align-items:center}
+.nav nav a{color:var(--muted);font-size:.9rem}
+.nav nav a:hover{color:var(--text);text-decoration:none}
+.langbtn{background:var(--panel2);border:1px solid var(--line);color:var(--text);
+  padding:7px 14px;border-radius:999px;cursor:pointer;font-size:.85rem;font-weight:600}
+.langbtn:hover{border-color:var(--accent)}
+@media(max-width:720px){.nav nav a.navlink{display:none}}
+
+/* hero */
+.hero{padding:84px 0 60px;position:relative;overflow:hidden}
+.badge-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:.78rem;
+  padding:5px 12px;border-radius:999px;border:1px solid var(--line);
+  background:var(--panel);color:var(--muted)}
+.badge.live{border-color:rgba(224,160,74,.4);color:var(--warn)}
+.badge .dot{width:7px;height:7px;border-radius:50%;background:var(--warn)}
+.hero h1{font-size:clamp(2.4rem,6vw,4rem);line-height:1.05;letter-spacing:-1px;
+  background:linear-gradient(120deg,#fff 20%,#9fc0e8 60%,#70e0c0 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:18px}
+.hero p.tagline{font-size:clamp(1.05rem,2.3vw,1.3rem);color:var(--muted);max-width:720px;margin-bottom:32px}
+.cta{display:flex;flex-wrap:wrap;gap:14px}
+.btn{display:inline-flex;align-items:center;gap:9px;padding:13px 24px;border-radius:12px;
+  font-weight:600;font-size:.98rem;border:1px solid transparent;transition:.18s}
+.btn:hover{text-decoration:none;transform:translateY(-2px)}
+.btn.primary{background:linear-gradient(120deg,var(--accent),#4f6f99);color:#fff}
+.btn.primary:hover{box-shadow:0 10px 30px -10px var(--accent)}
+.btn.ghost{background:var(--panel);border-color:var(--line);color:var(--text)}
+.btn.ghost:hover{border-color:var(--accent)}
+.btn svg{width:18px;height:18px}
+.hero-note{margin-top:28px;font-size:.85rem;color:var(--muted);max-width:720px}
+
+/* warning banner */
+.warnbar{margin-top:34px;display:flex;gap:14px;align-items:flex-start;
+  background:linear-gradient(90deg,rgba(224,160,74,.12),rgba(224,106,106,.06));
+  border:1px solid rgba(224,160,74,.3);border-radius:var(--radius);padding:18px 20px}
+.warnbar svg{flex:0 0 auto;width:22px;height:22px;color:var(--warn);margin-top:2px}
+.warnbar p{font-size:.9rem;color:#f0d9b8}
+
+/* cards grid */
+.grid{display:grid;gap:18px}
+.grid.c2{grid-template-columns:repeat(2,1fr)}
+.grid.c3{grid-template-columns:repeat(3,1fr)}
+@media(max-width:860px){.grid.c2,.grid.c3{grid-template-columns:1fr}}
+.card{background:linear-gradient(180deg,var(--panel),var(--bg2));
+  border:1px solid var(--line);border-radius:var(--radius);padding:22px 22px}
+.card h3{font-size:1.05rem;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.card h3 .ic{width:34px;height:34px;flex:0 0 auto;border-radius:9px;
+  display:grid;place-items:center;background:var(--panel2);border:1px solid var(--line)}
+.card h3 .ic svg{width:18px;height:18px;color:var(--accent2)}
+.card p{font-size:.9rem;color:var(--muted)}
+.card ul{list-style:none;margin-top:8px;font-size:.88rem;color:var(--muted)}
+.card ul li{padding-left:18px;position:relative;margin:4px 0}
+.card ul li::before{content:"";position:absolute;left:0;top:9px;width:6px;height:6px;
+  border-radius:50%;background:var(--accent2)}
+
+/* diagram */
+.diagram{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:24px;overflow-x:auto}
+.diagram svg{width:100%;min-width:680px;height:auto;display:block}
+.port-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:22px}
+.port{display:flex;gap:12px;align-items:baseline;background:var(--bg2);
+  border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+.port b{color:var(--accent2);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9rem}
+.port span{font-size:.84rem;color:var(--muted)}
+
+/* table */
+.tbl{width:100%;border-collapse:collapse;font-size:.88rem;overflow:hidden;
+  border:1px solid var(--line);border-radius:var(--radius)}
+.tbl th,.tbl td{text-align:left;padding:13px 16px;border-bottom:1px solid var(--line)}
+.tbl th{background:var(--panel2);color:var(--text);font-weight:600}
+.tbl tr:last-child td{border-bottom:none}
+.tbl td{color:var(--muted)}
+.pill{display:inline-block;font-size:.74rem;padding:3px 10px;border-radius:999px;font-weight:600}
+.pill.no{background:rgba(224,106,106,.14);color:#f0a0a0;border:1px solid rgba(224,106,106,.3)}
+.pill.wip{background:rgba(224,160,74,.14);color:#f0c98a;border:1px solid rgba(224,160,74,.3)}
+
+/* code */
+pre{background:#0a0d13;border:1px solid var(--line);border-radius:12px;padding:18px 20px;
+  overflow-x:auto;font-size:.84rem;line-height:1.6;color:#cde0f5;margin-top:14px}
+pre code{font-family:ui-monospace,Menlo,Consolas,monospace}
+.steps{counter-reset:s;list-style:none;margin-top:8px}
+.steps li{counter-increment:s;position:relative;padding:10px 0 10px 44px;color:var(--muted);font-size:.92rem;border-bottom:1px solid rgba(255,255,255,.04)}
+.steps li:last-child{border-bottom:none}
+.steps li::before{content:counter(s);position:absolute;left:0;top:9px;width:28px;height:28px;
+  border-radius:8px;background:var(--panel2);border:1px solid var(--line);
+  display:grid;place-items:center;color:var(--accent2);font-weight:700;font-size:.85rem}
+
+/* roadmap */
+.road{display:grid;gap:14px}
+.road .item{display:flex;gap:16px;align-items:flex-start;background:var(--panel);
+  border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.road .mark{flex:0 0 auto;width:26px;height:26px;border-radius:7px;display:grid;place-items:center;font-size:.8rem;font-weight:700}
+.road .done .mark{background:rgba(112,224,192,.15);color:var(--accent2);border:1px solid rgba(112,224,192,.3)}
+.road .wip .mark{background:rgba(224,160,74,.15);color:var(--warn);border:1px solid rgba(224,160,74,.3)}
+.road .item div p{font-size:.88rem;color:var(--muted)}
+.road .item div b{font-size:.95rem}
+
+.disc{background:linear-gradient(180deg,rgba(224,106,106,.06),transparent);
+  border:1px solid rgba(224,106,106,.25);border-radius:var(--radius);padding:24px 26px}
+.disc p{color:#d9b0b0;font-size:.9rem;margin-bottom:12px}
+.disc p:last-child{margin-bottom:0}
+
+.thanks p{color:var(--muted);max-width:760px}
+.thanks .names{display:flex;flex-wrap:wrap;gap:12px;margin-top:18px}
+.thanks .names .n{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:12px 18px;font-weight:600}
+
+footer{border-top:1px solid var(--line);padding:40px 0;color:var(--muted);font-size:.86rem}
+footer .wrap{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
+footer a{color:var(--muted)}
+
+[data-lang="zh"] .en{display:none}
+[data-lang="en"] .zh{display:none}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <span class="brand">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#10151f"/><rect x="6" y="11" width="20" height="10" rx="2" fill="none" stroke="#6488B5" stroke-width="2"/><circle cx="11" cy="16" r="1.6" fill="#70e0c0"/><circle cx="16" cy="16" r="1.6" fill="#70e0c0"/><circle cx="21" cy="16" r="1.6" fill="#70e0c0"/></svg>
+      OpenBYDDisplay
+    </span>
+    <nav>
+      <a class="navlink" href="#features"><span class="zh">功能特性</span><span class="en">Features</span></a>
+      <a class="navlink" href="#how"><span class="zh">工作原理</span><span class="en">How it works</span></a>
+      <a class="navlink" href="#vehicles"><span class="zh">支持车型</span><span class="en">Vehicles</span></a>
+      <a class="navlink" href="#start"><span class="zh">快速开始</span><span class="en">Get started</span></a>
+      <a class="navlink" href="#roadmap"><span class="zh">路线图</span><span class="en">Roadmap</span></a>
+      <button class="langbtn" id="langToggle" aria-label="Switch language">EN</button>
+    </nav>
+  </div>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="wrap">
+    <div class="badge-row">
+      <span class="badge live"><span class="dot"></span><span class="zh">研发测试版</span><span class="en">Research test version</span></span>
+      <span class="badge">MIT License</span>
+      <span class="badge">Android 9+ (API 28)</span>
+      <span class="badge"><span class="zh">当前版本 0.1.2</span><span class="en">Version 0.1.2</span></span>
+    </div>
+    <h1>OpenBYDDisplay</h1>
+    <p class="tagline">
+      <span class="zh">比亚迪仪表显示与车机互联开源项目。从车机客户端、连接协议到自研仪表服务，逐步构建可研究、可验证的开放实现。无需登录、VIP 或商业许可证。</span>
+      <span class="en">Open-source instrument-cluster display and head-unit connectivity for BYD vehicles. From the head-unit client and wire protocol to a self-developed cluster service — an open, verifiable implementation built step by step. No login, VIP tier or commercial license.</span>
+    </p>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/wayyoungboy/open-byd-display/releases" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span class="zh">下载测试版 (v0.1.1)</span><span class="en">Download test build (v0.1.1)</span>
+      </a>
+      <a class="btn ghost" href="https://github.com/wayyoungboy/open-byd-display" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.73.5.5 5.73.5 12a11.5 11.5 0 0 0 7.86 10.94c.57.1.78-.25.78-.55v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.68-1.28-1.68-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.2 1.77 1.2 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.26.73-1.55-2.56-.29-5.26-1.28-5.26-5.7 0-1.26.45-2.29 1.2-3.1-.12-.3-.52-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.06.75.81 1.2 1.84 1.2 3.1 0 4.43-2.7 5.4-5.28 5.69.42.36.79 1.06.79 2.14v3.17c0 .31.21.66.79.55A11.5 11.5 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5Z"/></svg>
+        <span class="zh">GitHub 仓库</span><span class="en">View on GitHub</span>
+      </a>
+    </div>
+    <div class="warnbar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <p>
+        <span class="zh"><b>本项目为测试版本，由个人出于兴趣爱好开发。</b>使用本软件即表示你知悉并自愿承担测试风险。在法律允许的最大范围内，本软件按现状提供，不作任何保证。当前<b>暂不包含可刷 QNX 仪表固件，新 App 尚未完成实车投屏出画验收</b>。</span>
+        <span class="en"><b>This is a test version, developed by an individual as a hobby project.</b> By using it you acknowledge and voluntarily accept the risks of testing. The software is provided "as is", without warranty of any kind. There is currently <b>no flashable QNX cluster firmware, and the new app has not passed an on-vehicle display acceptance test.</b></span>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="wrap">
+    <h2><span class="zh">功能特性</span><span class="en">Features</span>
+      <span class="sub"><span class="zh">仓库当前已实现的能力（更新链路研发阶段）</span><span class="en">Implemented in the repository today (update-pipeline research stage)</span></span>
+    </h2>
+    <div class="grid c3">
+      <div class="card">
+        <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></span><span class="zh">无账号 / 无授权门槛</span><span class="en">No login, no paywall</span></h3>
+        <p><span class="zh">无需登录、VIP 或商业许可证。线路编码器会拒绝发送 token / client_time 字段。</span><span class="en">No login, VIP tier, commercial license or token. The wire encoder refuses to send token / client_time fields.</span></p>
+      </div>
+      <div class="card">
+        <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span><span class="zh">USB NCM 传输</span><span class="en">USB NCM transport</span></h3>
+        <p><span class="zh">基于 TCP 的换行分隔 JSON。车机 NCM 地址 192.168.77.2，仪表默认 192.168.77.1。App 不自行配置 NCM 接口。</span><span class="en">Newline-delimited JSON over TCP. Head unit binds 192.168.77.2; cluster default 192.168.77.1. The app does not configure the NCM interface itself.</span></p>
+      </div>
+      <div class="card">
+        <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/></svg></span><span class="zh">更新包本地预检</span><span class="en">Local package pre-check</span></h3>
+        <p><span class="zh">ZIP 固件包：六个必需文件、路径净化、ZIP CRC 与各 SV 压缩体 MD5；FUP2 组件包：头、清单、路径与逐文件 SHA-256。</span><span class="en">ZIP firmware: the six required files, path sanitisation, ZIP CRC and each SV body MD5. FUP2 package: header, manifest, paths and per-file SHA-256.</span></p>
+      </div>
+      <div class="card">
+        <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></svg></span><span class="zh">安全默认的任务处理</span><span class="en">Safe-by-default jobs</span></h3>
+        <p><span class="zh">上传与安装为两个独立、需显式确认的动作；任务状态持久化，结果不明时只查询、不自动重试。</span><span class="en">Upload and install are separate explicit actions; job state is persisted, uncertain results are only queried and never auto-resubmitted.</span></p>
+      </div>
+      <div class="card">
+        <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></span><span class="zh">自研投屏链路 (0.1.2)</span><span class="en">Self-developed cast link (0.1.2)</span></h3>
+        <p><span class="zh">MediaProjection → H.264 → BVL1/LHF2 发送；按屏幕面积选投屏 profile；歌词 / 导航叠加协议与实验服务。</span><span class="en">MediaProjection → H.264 → BVL1/LHF2 sender; area-based cast profile selection; lyrics / navigation overlay protocols with a lab service.</span></p>
+      </div>
+      <div class="card">
+        <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg></span><span class="zh">原生视频核心</span><span class="en">Native video core</span></h3>
+        <p><span class="zh">C99 BVL1/LHF2 回环接收、帧校验及真实 H.264 解码实验；Clang/LLD 无 SDK 生成 ARM32 探针与播放器（待 QNX 运行验证）。</span><span class="en">C99 BVL1/LHF2 loopback receive, frame validation and real H.264 decode tests; Clang/LLD builds ARM32 probes and a player without an SDK (QNX runtime unverified).</span></p>
+      </div>
+      <div class="card">
+        <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg></span><span class="zh">自研实验服务</span><span class="en">Host lab service</span></h3>
+        <p><span class="zh">仅监听 127.0.0.1、操作沙箱目录的 Python 更新服务参考实现：Ed25519 验签、目标与硬件 ID 绑定、降级拒绝、原子发布。</span><span class="en">A Python reference service bound to 127.0.0.1 on a sandbox: Ed25519 verification, target/hardware-ID binding, downgrade refusal and atomic publishing.</span></p>
+      </div>
+      <div class="card">
+        <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 10v6m11-7h-6M7 12H1"/></svg></span><span class="zh">开机自启与 ADB 辅助</span><span class="en">Boot startup & ADB helper</span></h3>
+        <p><span class="zh">默认关闭的开机自启（不恢复上传、不安装、不投屏）；只读权限 / IPv4 诊断，显式配置后台打开权限。</span><span class="en">Opt-in boot startup (never resumes uploads, installs or casting); read-only permission / IPv4 diagnostics with explicit overlay configuration.</span></p>
+      </div>
+      <div class="card">
+        <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg></span><span class="zh">增量安装实验</span><span class="en">Incremental install</span></h3>
+        <p><span class="zh">签名差量、基线绑定、完整代际重建、试启动确认及未确认回退。</span><span class="en">Signed deltas, baseline binding, full-generation rebuild, trial-start confirmation and unconfirmed rollback.</span></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="wrap">
+    <h2><span class="zh">工作原理</span><span class="en">How it works</span>
+      <span class="sub"><span class="zh">手机 / 车机 → USB NCM → 仪表，各端口分工</span><span class="en">Phone / head unit → USB NCM → cluster, split by port</span></span>
+    </h2>
+    <div class="diagram">
+      <svg viewBox="0 0 900 300" role="img" aria-label="Architecture diagram">
+        <defs>
+          <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1a2435"/><stop offset="1" stop-color="#10151f"/></linearGradient>
+          <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#15283a"/><stop offset="1" stop-color="#101a26"/></linearGradient>
+          <marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#6488B5"/></marker>
+        </defs>
+        <!-- head unit box -->
+        <rect x="24" y="52" width="250" height="196" rx="14" fill="url(#g1)" stroke="#243149"/>
+        <text x="149" y="82" text-anchor="middle" fill="#e6edf6" font-size="16" font-weight="700" font-family="sans-serif">Head unit (Android)</text>
+        <text x="149" y="104" text-anchor="middle" fill="#8fa3bd" font-size="12" font-family="sans-serif">org.openbyddisplay · 192.168.77.2</text>
+        <rect x="44" y="120" width="210" height="30" rx="7" fill="#0a0d13" stroke="#243149"/><text x="149" y="140" text-anchor="middle" fill="#9fc0e8" font-size="12" font-family="monospace">MediaProjection → H.264</text>
+        <rect x="44" y="156" width="210" height="30" rx="7" fill="#0a0d13" stroke="#243149"/><text x="149" y="176" text-anchor="middle" fill="#9fc0e8" font-size="12" font-family="monospace">BVL1 / LHF2 sender</text>
+        <rect x="44" y="192" width="210" height="30" rx="7" fill="#0a0d13" stroke="#243149"/><text x="149" y="212" text-anchor="middle" fill="#9fc0e8" font-size="12" font-family="monospace">update client · JSON codec</text>
+        <!-- USB NCM link -->
+        <line x1="274" y1="150" x2="624" y2="150" stroke="#6488B5" stroke-width="2.5" marker-end="url(#arr)" marker-start="url(#arr)"/>
+        <rect x="372" y="120" width="156" height="58" rx="10" fill="#10151f" stroke="#6488B5"/>
+        <text x="450" y="144" text-anchor="middle" fill="#70e0c0" font-size="14" font-weight="700" font-family="sans-serif">USB NCM</text>
+        <text x="450" y="164" text-anchor="middle" fill="#8fa3bd" font-size="11" font-family="monospace">TCP · 1920×720 H.264</text>
+        <!-- cluster box -->
+        <rect x="626" y="52" width="250" height="196" rx="14" fill="url(#g2)" stroke="#243149"/>
+        <text x="751" y="82" text-anchor="middle" fill="#e6edf6" font-size="16" font-weight="700" font-family="sans-serif">Cluster (QNX)</text>
+        <text x="751" y="104" text-anchor="middle" fill="#8fa3bd" font-size="12" font-family="sans-serif">192.168.77.1</text>
+        <rect x="646" y="120" width="210" height="30" rx="7" fill="#0a0d13" stroke="#243149"/><text x="751" y="140" text-anchor="middle" fill="#70e0c0" font-size="11.5" font-family="monospace">:47782 video · :47783 ctrl</text>
+        <rect x="646" y="156" width="210" height="30" rx="7" fill="#0a0d13" stroke="#243149"/><text x="751" y="176" text-anchor="middle" fill="#70e0c0" font-size="11.5" font-family="monospace">:47785 HMI / update</text>
+        <rect x="646" y="192" width="210" height="30" rx="7" fill="#0a0d13" stroke="#243149" stroke-dasharray="5 4"/><text x="751" y="212" text-anchor="middle" fill="#e0a04a" font-size="11" font-family="monospace">native QNX service (planned)</text>
+      </svg>
+    </div>
+    <div class="port-list">
+      <div class="port"><b>:47777</b><span class="zh">状态 / 版本探测</span><span class="en">status / version probe</span></div>
+      <div class="port"><b>:47782</b><span class="zh">H.264 视频推流</span><span class="en">H.264 video stream</span></div>
+      <div class="port"><b>:47783</b><span class="zh">接收端控制命令</span><span class="en">receiver control</span></div>
+      <div class="port"><b>:47785</b><span class="zh">HMI / 更新服务</span><span class="en">HMI / update service</span></div>
+      <div class="port"><b>:47786</b><span class="zh">导航叠加</span><span class="en">navigation overlay</span></div>
+      <div class="port"><b>:47787</b><span class="zh">歌词 / 音乐叠加</span><span class="en">lyrics / music overlay</span></div>
+    </div>
+    <p class="lead" style="margin-top:22px;font-size:.85rem">
+      <span class="zh">说明：当前仪表端更新服务由仓库内 Python 实验服务（仅监听 127.0.0.1、沙箱目录）模拟；原生 QNX 服务尚未实现。端口与协议常量取自仓库 <code>headunit/app/.../cast/CastPorts.kt</code>。</span>
+      <span class="en">Note: today the cluster-side update service is simulated by the repository's Python lab service (127.0.0.1, sandbox only); the native QNX service is not yet implemented. Port and protocol constants come from <code>headunit/app/.../cast/CastPorts.kt</code>.</span>
+    </p>
+  </div>
+</section>
+
+<!-- VEHICLES -->
+<section id="vehicles">
+  <div class="wrap">
+    <h2><span class="zh">支持车型</span><span class="en">Supported vehicles</span>
+      <span class="sub"><span class="zh">两个目标分别适配，均未经实车验证，不可互刷</span><span class="en">Two separately-profiled targets, neither verified on a vehicle, never interchangeable</span></span>
+    </h2>
+    <table class="tbl">
+      <thead><tr>
+        <th><span class="zh">目标 ID</span><span class="en">Target ID</span></th>
+        <th><span class="zh">车型</span><span class="en">Vehicle</span></th>
+        <th><span class="zh">仪表硬件</span><span class="en">Cluster HW</span></th>
+        <th><span class="zh">QNX 原生构建</span><span class="en">QNX build</span></th>
+        <th><span class="zh">实车刷写</span><span class="en">On-vehicle flash</span></th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td><code>song-plus-dmi-2021</code></td>
+          <td><span class="zh">21 款宋 PLUS DM-i</span><span class="en">2021 BYD Song PLUS DM-i</span></td>
+          <td><span class="pill no"><span class="zh">未验证</span><span class="en">not verified</span></span></td>
+          <td><span class="pill no"><span class="zh">未验证</span><span class="en">not verified</span></span></td>
+          <td><span class="pill no"><span class="zh">未验证</span><span class="en">not verified</span></span></td>
+        </tr>
+        <tr>
+          <td><code>tang-plus-dmi-2021</code></td>
+          <td><span class="zh">21 款唐 PLUS DM-i（用户提供名称，车型 / 仪表型号待核实）</span><span class="en">2021 BYD Tang PLUS DM-i (name as reported; model & part number to confirm)</span></td>
+          <td><span class="pill no"><span class="zh">未验证</span><span class="en">not verified</span></span></td>
+          <td><span class="pill no"><span class="zh">未验证</span><span class="en">not verified</span></span></td>
+          <td><span class="pill no"><span class="zh">未验证</span><span class="en">not verified</span></span></td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="lead" style="margin-top:18px;font-size:.86rem">
+      <span class="zh">两个目标分别适配，固件文件名、版本号或共享 OS 不能作为互刷依据。字段取自 <code>firmware/targets.json</code>，三项验证标志当前均为 false。</span>
+      <span class="en">The two targets are not interchangeable — a matching firmware filename, OS hash or version string is not proof of compatible hardware. Fields come from <code>firmware/targets.json</code>; all three verification flags are currently false.</span>
+    </p>
+  </div>
+</section>
+
+<!-- GET STARTED -->
+<section id="start">
+  <div class="wrap">
+    <h2><span class="zh">快速开始 / 构建</span><span class="en">Get started / Build</span></h2>
+    <div class="grid c2">
+      <div class="card">
+        <h3><span class="zh">安装测试版</span><span class="en">Install a test build</span></h3>
+        <ol class="steps">
+          <li><span class="zh">从 Releases 下载标明测试状态的 APK，对照公布的 SHA-256 校验。</span><span class="en">Download the APK marked as a test build from Releases and check it against the published SHA-256.</span></li>
+          <li><span class="zh">在车机上旁加载安装（sideload / <code>adb install</code>）。包名 <code>org.openbyddisplay</code>，可与小灰灰并存。</span><span class="en">Sideload it on the head unit (<code>adb install</code>). Package <code>org.openbyddisplay</code> installs alongside the original app.</span></li>
+          <li><span class="zh">车辆静止、供电稳定时连接车机，先检查、再上传、最后手动确认安装。</span><span class="en">With the vehicle stationary and power stable, check first, upload, then confirm install manually.</span></li>
+        </ol>
+      </div>
+      <div class="card">
+        <h3><span class="zh">从源码构建</span><span class="en">Build from source</span></h3>
+        <p><span class="zh">需要 JDK 17、Android SDK 34 / Build-Tools 34.0.0、Python 3.12。配置好 <code>headunit/local.properties</code> 与虚拟环境后：</span><span class="en">Requires JDK 17, Android SDK 34 / Build-Tools 34.0.0, Python 3.12. After setting up <code>headunit/local.properties</code> and a venv:</span></p>
+        <pre><code>python3 -m pip install -r firmware/requirements.txt
+python3 -m unittest discover -s headunit/tools/tests -v
+PYTHONPATH=firmware python3 -m unittest discover \
+  -s firmware/tests -v
+./headunit/gradlew -p headunit :app:testDebugUnitTest \
+  :app:lintDebug :app:assembleDebug</code></pre>
+      </div>
+    </div>
+    <p class="lead" style="margin-top:18px;font-size:.86rem">
+      <span class="zh">现阶段通过 GitHub 下载并选择本地文件，不执行无人确认的固件 OTA。电脑实验包不可刷入现成仪表；旧 App 请保留。更多见仓库 <a href="https://github.com/wayyoungboy/open-byd-display#readme" target="_blank" rel="noopener">README</a> 与 <code>docs/</code>。</span>
+      <span class="en">For now packages are downloaded via GitHub and picked as local files; there is no unattended OTA. Lab packages must never be used on a real cluster; keep the original app. See the repository <a href="https://github.com/wayyoungboy/open-byd-display#readme" target="_blank" rel="noopener">README</a> and <code>docs/</code>.</span>
+    </p>
+  </div>
+</section>
+
+<!-- ROADMAP -->
+<section id="roadmap">
+  <div class="wrap">
+    <h2><span class="zh">路线图与当前限制</span><span class="en">Roadmap & current limits</span></h2>
+    <div class="road">
+      <div class="item done"><span class="mark">✓</span><div><b><span class="zh">更新链路：预检、流式上传、安装事务</span><span class="en">Update pipeline: pre-check, streaming upload, install transaction</span></b><p><span class="zh">Android 客户端与 Python 实验服务已实现并通过测试。</span><span class="en">Implemented in the Android client and Python lab service, with passing tests.</span></p></div></div>
+      <div class="item done"><span class="mark">✓</span><div><b><span class="zh">原生视频核心与无 SDK ARM32 构建</span><span class="en">Native video core & SDK-independent ARM32 build</span></b><p><span class="zh">C99 BVL1/LHF2 接收、真实 H.264 解码；Clang/LLD 链接生成 ARM32 ELF。</span><span class="en">C99 BVL1/LHF2 receive with real H.264 decode; Clang/LLD produces ARM32 ELF.</span></p></div></div>
+      <div class="item done"><span class="mark">✓</span><div><b><span class="zh">自研投屏客户端 (0.1.2)</span><span class="en">Self-developed cast client (0.1.2)</span></b><p><span class="zh">MediaProjection → H.264 → BVL1/LHF2；profile 面积选择；歌词 / 导航叠加协议。</span><span class="en">MediaProjection → H.264 → BVL1/LHF2; area-based profile selection; lyrics / navigation overlay protocols.</span></p></div></div>
+      <div class="item wip"><span class="mark">…</span><div><b><span class="zh">仪表端原生接收 / 上屏程序（需 QNX 6.x 工具链）</span><span class="en">Cluster-side native receive / rendering (needs a QNX 6.x toolchain)</span></b><p><span class="zh">自研 QNX 播放器、投屏出画、USB 角色切换回读、Kanzi 叠层，均需 SDP 6.x ARMv7 工具链，当前未刷机验证。</span><span class="en">A self-developed QNX player, on-screen cast, USB role-switch readback and Kanzi overlays all require an SDP 6.x ARMv7 toolchain; not yet verified on a cluster.</span></p></div></div>
+      <div class="item wip"><span class="mark">…</span><div><b><span class="zh">可刷 QNX 仪表固件与整车恢复</span><span class="en">Flashable QNX firmware & full-vehicle recovery</span></b><p><span class="zh">需实际 QNX 加载、解码 / 窗口验证、原生安装 / 恢复集成及分车型实车测试。</span><span class="en">Requires actual QNX loading, decoder/window validation, native install/recovery integration and per-model vehicle testing.</span></p></div></div>
+      <div class="item wip"><span class="mark">…</span><div><b><span class="zh">USB Host/NCM 切换、页面锁、主题编辑器</span><span class="en">USB Host/NCM switching, page lock, theme editor</span></b><p><span class="zh">需要车机特权或改动仪表原生 HMI，暂未实现（详见 <code>docs/cast-capability-gap.md</code>）。</span><span class="en">Needs system privileges or changes to the cluster's native HMI; not yet implemented (see <code>docs/cast-capability-gap.md</code>).</span></p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- DISCLAIMER -->
+<section id="disclaimer">
+  <div class="wrap">
+    <h2><span class="zh">免责声明</span><span class="en">Disclaimer</span></h2>
+    <div class="disc">
+      <p><span class="zh"><b>稳定性与安全。</b>本软件为实验性测试软件。修改车机或仪表可能导致不可启动、显示异常、原车功能受影响、数据或财产损失，并可能影响质保或合规状态。切勿在行车时操作。</span><span class="en"><b>Stability and safety.</b> This is experimental test software. Modifying a head unit or instrument cluster can make it unbootable, cause display faults, affect original vehicle functions, cause data or property loss, and may affect your warranty or regulatory compliance. Never operate it while driving.</span></p>
+      <p><span class="zh">任何支持、适配或测试结论只以明确列出的版本和实际证据为限；“可构建”“收到 ACK”“已暂存”不代表车辆可安全刷写或实际出画。</span><span class="en">Any support, adaptation or test conclusion applies only to the explicitly listed versions and actual evidence; "it builds", "received an ACK" or "staged" does not mean a vehicle can be safely flashed or actually displays an image.</span></p>
+      <p><span class="zh"><b>商标与独立性。</b>本项目与比亚迪、德赛及其他厂商、商业投屏产品不存在隶属、合作、授权、认证或背书关系；名称仅用于说明研究对象，不授予商标使用权。本仓库只发布自主代码与有权再分发的依赖，不含第三方 APK、仪表固件、反编译代码或厂商密钥。</span><span class="en"><b>Trademarks and independence.</b> This project has no affiliation, partnership, authorization, certification or endorsement relationship with BYD, Desay, any other manufacturer or any commercial casting product. Names are used only to describe the research subject. This repository distributes only its own code and redistributable dependencies — no third-party APKs, cluster firmware, decompiled code or vendor keys.</span></p>
+    </div>
+  </div>
+</section>
+
+<!-- THANKS -->
+<section id="thanks" class="thanks">
+  <div class="wrap">
+    <h2><span class="zh">致谢</span><span class="en">Acknowledgements</span></h2>
+    <p><span class="zh">感谢分享问题、适配结果，以及维护 Kotlin、AndroidX、Gradle 和 <code>cryptography</code> 的贡献者。特别感谢以下给予帮助与支持：</span><span class="en">Thanks to everyone who reports issues and shares vehicle adaptation results, and to the Kotlin, AndroidX, Gradle and <code>cryptography</code> projects. Special thanks for their help and support to:</span></p>
+    <div class="names">
+      <span class="n">迪加</span>
+      <span class="n">远方的小熊猫智能守卫</span>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>OpenBYDDisplay · <a href="https://github.com/wayyoungboy/open-byd-display/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a> · © 2026 wayyoungboy / contributors</span>
+    <span>
+      <a href="https://github.com/wayyoungboy/open-byd-display" target="_blank" rel="noopener">GitHub</a> ·
+      <a href="https://github.com/wayyoungboy/open-byd-display/releases" target="_blank" rel="noopener"><span class="zh">下载</span><span class="en">Releases</span></a> ·
+      <a href="https://github.com/wayyoungboy/open-byd-display/issues" target="_blank" rel="noopener"><span class="zh">反馈</span><span class="en">Issues</span></a>
+    </span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var html=document.documentElement, btn=document.getElementById('langToggle');
+  function set(l){html.setAttribute('data-lang',l);html.setAttribute('lang',l==='zh'?'zh-CN':'en');
+    btn.textContent=(l==='zh')?'EN':'中';try{localStorage.setItem('obd-lang',l);}catch(e){}}
+  var saved;try{saved=localStorage.getItem('obd-lang');}catch(e){}
+  set(saved==='en'?'en':'zh');
+  btn.addEventListener('click',function(){set(html.getAttribute('data-lang')==='zh'?'en':'zh');});
+})();
+</script>
+</body>
+</html>
