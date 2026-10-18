@@ -86,7 +86,7 @@ PYTHONPATH=instrument python3 -m unittest discover -s instrument/tests -v
 
 ## 致谢
 
-特别感谢迪加和远方的小熊猫智能守卫的帮助与支持，也感谢分享问题、适配结果以及维护Kotlin、AndroidX、Gradle和`cryptography`的贡献者。
+感谢分享问题、适配结果以及维护Kotlin、AndroidX、Gradle和`cryptography`的贡献者。
 
 ## 独立性与许可
 
