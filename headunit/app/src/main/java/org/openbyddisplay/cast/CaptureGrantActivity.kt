@@ -11,6 +11,9 @@ class CaptureGrantActivity : Activity() {
     private lateinit var options: CastOptions
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (org.openbyddisplay.vehicle.UsbSwitchStore.blocked(this)) {
+            CastSessionStore.idle(this, "USB 切换结果未确认，请先刷新原请求"); finish(); return
+        }
         options = runCatching { CastSettings.snapshot(this) }.getOrElse { finish(); return }
         if (options.source != "mirror") { launch(0, null); return }
         if (savedInstanceState == null) startActivityForResult(

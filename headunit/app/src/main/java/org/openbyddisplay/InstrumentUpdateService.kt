@@ -36,7 +36,8 @@ class InstrumentUpdateService : Service() {
             if (action == "cancel") { cancelRequested.set(true); client?.close() }
             return START_NOT_STICKY
         }
-        if (org.openbyddisplay.cast.CastSafetyStore.blocked(this) || !InstrumentOperation.acquire("update")) {
+        if (org.openbyddisplay.cast.CastSafetyStore.blocked(this) ||
+            org.openbyddisplay.vehicle.UsbSwitchStore.blocked(this) || !InstrumentOperation.acquire("update")) {
             busy.set(false)
             stopForeground(true); stopSelf(startId)
             return START_NOT_STICKY

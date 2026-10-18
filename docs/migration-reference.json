@@ -1,0 +1,332 @@
+{
+  "as_of": "2026-10-19",
+  "reference_repository": "wayyoungboy/xiaohuihui-cluster-cast",
+  "reference_head": "34b06cdd01d80f4dbb205edecc303840ce4ca7bd",
+  "reference_working_tree": "包含本地未提交修改，摘要绑定具体文件；不是已发布版本声明",
+  "reference_latest_release": "test-0.12.39",
+  "target_latest_release": "v0.1.1",
+  "target_source_version": "0.1.4-development",
+  "vehicle_evidence_inherited": false,
+  "files": [
+    {
+      "file": "AmbientLightActivity.kt",
+      "group": "氛围灯",
+      "sha256": "a1c25d8ad30afa3f201e34a182cfb8d27f01360992926b9cad23168eb8929279"
+    },
+    {
+      "file": "AmbientLightAudio.kt",
+      "group": "氛围灯",
+      "sha256": "901533088c2e687d6e0e243fde616befbe8a2604b5e194dabb1ff7b0e3852e61"
+    },
+    {
+      "file": "AmbientLightEffect.kt",
+      "group": "氛围灯",
+      "sha256": "1e963b4d6b493ac01cc021c3f3ebe87bca3b50a14bda2b35bee280c76bca7601"
+    },
+    {
+      "file": "AmbientLightFragment.kt",
+      "group": "氛围灯",
+      "sha256": "a4380af8349f97c06ed2e217c318ea84e80522056a0333a363de6f05ce0cf0d9"
+    },
+    {
+      "file": "AmbientLightService.kt",
+      "group": "氛围灯",
+      "sha256": "01a5898ced180b3be7ae9869caefa41ad303a9d0ce0258fa64d2225a49016eed"
+    },
+    {
+      "file": "AmbientLightShellHelper.kt",
+      "group": "氛围灯",
+      "sha256": "1e8343433f5f557bec29885b084bc2d2a6416f96073846cac0d71e30dafc9b31"
+    },
+    {
+      "file": "AmbientSettings.kt",
+      "group": "氛围灯",
+      "sha256": "90ba338553f5d3ec8ac26167ca886fad7de9aaa57a1b6b0833d22bb0fec94542"
+    },
+    {
+      "file": "BydInstrumentCmd.kt",
+      "group": "USB与网络",
+      "sha256": "9f76abe0a07b733e3a14d4dfe0f6b44037459dd41e55476beadd68dd6556480a"
+    },
+    {
+      "file": "CaptureGrantActivity.kt",
+      "group": "镜像与地图副屏",
+      "sha256": "026d077e60c8c830ae208678221c513ab317d6f2b163446cb2519fcbd63ad76b"
+    },
+    {
+      "file": "CastForegroundService.kt",
+      "group": "镜像与地图副屏",
+      "sha256": "c615407521c8135f914530f5198bbb17c8e0ece35d11a4b1efbad55b1e570eb1"
+    },
+    {
+      "file": "CastModePolicy.kt",
+      "group": "镜像与地图副屏",
+      "sha256": "1f474608cf88275d91a8d8c0fa31c27b5860ec4895a98892926ab8ead8f4b570"
+    },
+    {
+      "file": "ClusterCastProfile.kt",
+      "group": "视频与能力协商",
+      "sha256": "bc956e29fe3f768f96c6bed56f8dc42f6b28c711d9a33918540920081049c1f7"
+    },
+    {
+      "file": "ClusterClient.kt",
+      "group": "视频与能力协商",
+      "sha256": "b02e5c9df6002f2cc4aeaea9c09937c8d1d498d01ed856311f374b2a3d6f2b11"
+    },
+    {
+      "file": "ClusterFirmware.kt",
+      "group": "视频与能力协商",
+      "sha256": "95b3b25ea735260a8f0363f6e5edb5a8a5783f8ca1239018a91f10e7310bba4c"
+    },
+    {
+      "file": "ClusterHeartbeat.kt",
+      "group": "视频与能力协商",
+      "sha256": "b86eb52508c33501b8bc91281d79f1316244b2e08245e5d1f4230f6bfd351789"
+    },
+    {
+      "file": "ClusterHostDetector.kt",
+      "group": "USB与网络",
+      "sha256": "8f974f1d949fd4acee1967f33152bbb87f66692d9263ff8aa8fe98c0b542ff43"
+    },
+    {
+      "file": "ClusterLicenseClock.kt",
+      "group": "业务授权（不迁移）",
+      "sha256": "c2f942cd60c54e406ee3e77f2d752e0e78463a65ab2d504baad3dbaa2799e346"
+    },
+    {
+      "file": "ClusterWireProtocol.kt",
+      "group": "视频与能力协商",
+      "sha256": "aa0d2187613d58d66a3f5516298bdfaf42070cab8905f813be7dcc2a2852c106"
+    },
+    {
+      "file": "FeaturePreferencePolicy.kt",
+      "group": "设置与恢复入口",
+      "sha256": "01d490b5be5e86fe950630142f52b5300b57944b7a8aa9073fcd77ed2910bc2f"
+    },
+    {
+      "file": "FeatureRestoreService.kt",
+      "group": "设置与恢复入口",
+      "sha256": "b5d74e80cb487964211d2511d6a99fbd25c793fd306d16b25ee59961fe0d9b09"
+    },
+    {
+      "file": "FeatureSettings.kt",
+      "group": "设置与恢复入口",
+      "sha256": "9832816601e8838489db7a89d1e1c86472795f20d1d3aaf5509a163a055b35a9"
+    },
+    {
+      "file": "FirmwareToken.kt",
+      "group": "业务授权（不迁移）",
+      "sha256": "867ea9fc7e0cbbe80820662db0389cf8a7d1cccde290647d3b2fe588a4aede18"
+    },
+    {
+      "file": "FlyscreenNavHelper.kt",
+      "group": "镜像与地图副屏",
+      "sha256": "6178f481657cb26c45a2892b050c7402cd82d0163bb79db3aed0e871256bbb1a"
+    },
+    {
+      "file": "FlyscreenVignette.kt",
+      "group": "遮罩与外观",
+      "sha256": "5b1740d89f3ff12c367add2191d3ff1feb3cd9a3c5008ff999e46d1185f9d978"
+    },
+    {
+      "file": "H264Encoder.kt",
+      "group": "镜像与地图副屏",
+      "sha256": "b9dd58fa6255b77598e8732d3092e2492b1538905243b2d055f3a3a0dbed7526"
+    },
+    {
+      "file": "HeadlightFollowPolicy.kt",
+      "group": "深浅模式与大灯",
+      "sha256": "096bb9a96f15f375ca86b4bc41ada02ce2dde4f244418846d78b5e2e0866b214"
+    },
+    {
+      "file": "HeadlightFollowService.kt",
+      "group": "深浅模式与大灯",
+      "sha256": "3621d56af617e7d3fde9df0d2dcff053bb83799aeb3580864edc79e08aa906c6"
+    },
+    {
+      "file": "HeadlightFollowShellHelper.kt",
+      "group": "深浅模式与大灯",
+      "sha256": "923430ecad8a1a9caf23b32e6a545c87ce586d3a67dc031166fe360ae86e23c8"
+    },
+    {
+      "file": "HmiCastSession.kt",
+      "group": "独立导航歌词卡片",
+      "sha256": "a94e2eb334ff3840475b3e5b16bb44e06f5d3a114358cbc9b53db41ec45fe78f"
+    },
+    {
+      "file": "InstrumentUpdateActivity.kt",
+      "group": "更新包与更新任务",
+      "sha256": "47ae9fe401805f245a5d7a1a82f4e6ccb824ed1c982f9a8f9e3209a08779a7c2"
+    },
+    {
+      "file": "InstrumentUpdateClient.kt",
+      "group": "更新包与更新任务",
+      "sha256": "560e944e619b3dc7bcce4102917f72662912fc2879de7f4fcfe8bee190925c23"
+    },
+    {
+      "file": "InstrumentUpdatePackage.kt",
+      "group": "更新包与更新任务",
+      "sha256": "0f61ce311c3f72edd721632ab0c956fee03ef90126f9a54dbfb8a9d24ea3cd8c"
+    },
+    {
+      "file": "InstrumentUpdateProtocol.kt",
+      "group": "更新包与更新任务",
+      "sha256": "78ded78f7c96bb7bad92270fe095cd65b14d32779627ea791ae033081d21748e"
+    },
+    {
+      "file": "InstrumentUpdateService.kt",
+      "group": "更新包与更新任务",
+      "sha256": "91ce7232a9494ce432de9c8a8704ad3786ece0a3a6487c2996ea9c0782b8f2de"
+    },
+    {
+      "file": "InstrumentUpdateStore.kt",
+      "group": "更新包与更新任务",
+      "sha256": "239838fa0f723b15e265b947672245778ef4cd57d5d0d93d4773baa85905bf38"
+    },
+    {
+      "file": "Lhf2Client.kt",
+      "group": "视频与能力协商",
+      "sha256": "d211738f21154f641130bd0408ebe8bc8ff66607d05fa0781c5e4c1c9f631f3c"
+    },
+    {
+      "file": "Lhf2Protocol.kt",
+      "group": "视频与能力协商",
+      "sha256": "3c30df34891f18a40910e6037eb82d91f16f958109d20810750ebbcc54c6bb89"
+    },
+    {
+      "file": "LocalAdbShell.kt",
+      "group": "本机ADB",
+      "sha256": "9db2cbd4ac582359ed247825106a5238150b3298f0bbc0ccb7b5bc3a11b5f473"
+    },
+    {
+      "file": "LrcTimeline.kt",
+      "group": "音乐与歌词",
+      "sha256": "be673c7805402bd18446063530787093e3a2c318e08c602f82710d2373837577"
+    },
+    {
+      "file": "LyricCastService.kt",
+      "group": "音乐与歌词",
+      "sha256": "fbc4e71734a394d5b98cdea09da932d56f03b15ddaad0eec8e7c16a168b56cc7"
+    },
+    {
+      "file": "LyricLineLayout.kt",
+      "group": "音乐与歌词",
+      "sha256": "cb85299b6f662660c6056790122bc11a19e0f2fa69c7ae0c8cd09f9dfadc8950"
+    },
+    {
+      "file": "LyricSessionListener.kt",
+      "group": "音乐与歌词",
+      "sha256": "62f26486e5501f2a1f71d714344da7ba5310150b6afd346048860bcf3929a512"
+    },
+    {
+      "file": "LyricTrackIdentity.kt",
+      "group": "音乐与歌词",
+      "sha256": "7b1cde49501ff95337e59e7949a86917f6fd8da2242e17c4ddea42baf1fc2a85"
+    },
+    {
+      "file": "MainActivity.kt",
+      "group": "设置与恢复入口",
+      "sha256": "5b20bbcffab0c1ce7c12b2ed53d28af885566aee2e66d3974275e43adea32440"
+    },
+    {
+      "file": "MapFrameScaler.kt",
+      "group": "镜像与地图副屏",
+      "sha256": "9b40589288cda175e232240738c9d3cf1d43c5990d7f52d5b48ac5e41c777632"
+    },
+    {
+      "file": "NavDisplayLauncher.kt",
+      "group": "镜像与地图副屏",
+      "sha256": "8c6ad22183b5ef7d984b0394d9b2bf12a45da2bae2ccf722ddef83755d16fcbf"
+    },
+    {
+      "file": "NetworkProbe.kt",
+      "group": "USB与网络",
+      "sha256": "8d7e31041be1ccd4fd9cf741a0de98f0eb93b30e712e48eb32257e33cbb19e44"
+    },
+    {
+      "file": "PresentationWindowParser.kt",
+      "group": "镜像与地图副屏",
+      "sha256": "4b818b931e81ed8a9285dce9238b1c66b59babcc1a0e685d89bbeab8f57fd463"
+    },
+    {
+      "file": "SessionEpoch.kt",
+      "group": "设置与恢复入口",
+      "sha256": "8aca17073993ececc1f09716969758d59937b2534e5946f650e98be21adf9567"
+    },
+    {
+      "file": "ShellNativeModeReader.kt",
+      "group": "深浅模式与大灯",
+      "sha256": "cd2bdb300c6fcd665dfcb8a526ff7eb00245d80a6bcf8219284f34fcbd241383"
+    },
+    {
+      "file": "ShellNightModeController.kt",
+      "group": "深浅模式与大灯",
+      "sha256": "5ffdbe4dd6427bd1ca2cf617edb45c50a276f675ffeb7bc5d2df7bc465bd5261"
+    },
+    {
+      "file": "SimpleCastService.kt",
+      "group": "独立导航歌词卡片",
+      "sha256": "697c3028b46e668313a549b3844b02044ed44ac232a7df8f3069b8a3662f3733"
+    },
+    {
+      "file": "SimpleNavSession.kt",
+      "group": "独立导航歌词卡片",
+      "sha256": "4e806a4456ac7e671117b01633605bfbf6a548854ed8aab3d069eb31712c29f1"
+    },
+    {
+      "file": "SoftEdgeMask.kt",
+      "group": "遮罩与外观",
+      "sha256": "67f32831340bfdf99d6c26b4660e9016e5df7b3c72cf31bf3321d8836b11732b"
+    },
+    {
+      "file": "TokenStore.kt",
+      "group": "业务授权（不迁移）",
+      "sha256": "d114b0d3286901e8e805491d594ee9610929ba5d323c256952c0222a022b7cdf"
+    },
+    {
+      "file": "UiModeBootReceiver.kt",
+      "group": "深浅模式与大灯",
+      "sha256": "9bb7c5ccdce43ab321dbc7d3f3d9a465f4149a82297b38c63ed03c5d6c3e436b"
+    },
+    {
+      "file": "UiModeHelper.kt",
+      "group": "深浅模式与大灯",
+      "sha256": "1b95c3b7095b5cae614ff367491316c6e34ca8010cd220b9d0e99aeec755ea6f"
+    },
+    {
+      "file": "UiModeWriteEvidence.kt",
+      "group": "深浅模式与大灯",
+      "sha256": "c2bf2ae7dbd9bec552ea80bd558a0f4ac2a8d190fa44c7d05872f8cade104bfd"
+    },
+    {
+      "file": "UsbModeDetector.kt",
+      "group": "USB与网络",
+      "sha256": "5c956b8a599021ee0b4c23bd3b9a50b7502268b3cd13984f782f7dcce7becbb9"
+    },
+    {
+      "file": "UsbModeEvidence.kt",
+      "group": "USB与网络",
+      "sha256": "34458060b95f72a451d565be2efb96e6605f79e6e18fc64a9dd3bb33f8485c25"
+    },
+    {
+      "file": "UsbModeReceiver.kt",
+      "group": "USB与网络",
+      "sha256": "e7f0986aa8d40ec857cfcf03ef6ac332d2a33bcfc62d5f6119029a5a26d186c1"
+    },
+    {
+      "file": "UsbModeRequestService.kt",
+      "group": "USB与网络",
+      "sha256": "407ccc416f942ae4984407eb2d9cd5bfca06b551a847493bd15932a016d12230"
+    },
+    {
+      "file": "UsbModeShellHelper.kt",
+      "group": "USB与网络",
+      "sha256": "d33f9532e7c1fe45d95ad25aebf8c2072cfe7200786733e1e74c8ad05a24592f"
+    },
+    {
+      "file": "VignettePalette.kt",
+      "group": "遮罩与外观",
+      "sha256": "8e2ccf0bf46b4ef396348017ae61d3c2a0c6a77991ae40dfa81248911814292c"
+    }
+  ]
+}

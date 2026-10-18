@@ -3,13 +3,15 @@
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="24dp">
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="OpenBYDDisplay" android:textSize="24sp" android:textColor="@color/text_primary" android:textStyle="bold" />
         <TextView android:id="@+id/projectRiskNotice" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="16dp" android:paddingBottom="16dp" android:text="@string/project_risk_notice" android:textSize="16sp" android:textColor="@color/warn_amber" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingBottom="12dp" android:text="定制开发请联系作者，定制类仪表固件需要收费。" android:textSize="14sp" android:textColor="@color/text_secondary" />
+        <Button android:id="@+id/customSupport" android:layout_width="match_parent" android:layout_height="52dp" android:text="联系作者 · 定制与支持" />
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="连接自研仪表服务，无登录、VIP或商业许可证。" android:textSize="16sp" android:textColor="@color/text_secondary" />
         <EditText android:id="@+id/updateHost" android:layout_width="match_parent" android:layout_height="56dp" android:inputType="textUri" android:singleLine="true" android:hint="仪表地址" android:textColor="@color/text_primary" android:textColorHint="@color/text_secondary" />
 
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="16dp" android:text="投屏（自研协议）" android:textSize="18sp" android:textColor="@color/text_primary" android:textStyle="bold" />
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingBottom="8dp" android:text="支持屏幕镜像、地图独立副屏、高德飞屏版副地图和动态标定图。需要匹配的自研仪表接收服务；当前版本尚待实车测试。" android:textSize="14sp" android:textColor="@color/text_secondary" />
         <Switch android:id="@+id/castFullWidth" android:layout_width="match_parent" android:layout_height="48dp" android:text="填满仪表标定区域（关闭使用小窗口）" android:checked="true" android:textColor="@color/text_primary" />
-        <Switch android:id="@+id/castSoftEdge" android:layout_width="match_parent" android:layout_height="48dp" android:text="黑色柔边" android:checked="true" android:textColor="@color/text_primary" />
+        <Switch android:id="@+id/castSoftEdge" android:layout_width="match_parent" android:layout_height="48dp" android:text="柔边（跟随车机实际深浅模式）" android:checked="true" android:textColor="@color/text_primary" />
         <Switch android:id="@+id/castLyrics" android:layout_width="match_parent" android:layout_height="48dp" android:text="显示当前音乐及本地 LRC 歌词" android:checked="false" android:textColor="@color/text_primary" />
         <Switch android:id="@+id/castNav" android:layout_width="match_parent" android:layout_height="48dp" android:text="显示高德导航文字（需地图广播数据）" android:checked="false" android:textColor="@color/text_primary" />
         <Switch android:id="@+id/castAutoReconnect" android:layout_width="match_parent" android:layout_height="48dp" android:text="断线后重试连接（最多连续 3 次）" android:checked="true" android:textColor="@color/text_primary" />
@@ -23,6 +25,8 @@
         <Button android:id="@+id/castRecovery" android:layout_width="match_parent" android:layout_height="52dp" android:text="核对投屏中断后的恢复状态" android:visibility="gone" />
         <TextView android:id="@+id/castStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="8dp" android:paddingBottom="16dp" android:textSize="14sp" android:textColor="@color/text_primary" android:textIsSelectable="true" />
 
+        <Button android:id="@+id/ambientOpen" android:layout_width="match_parent" android:layout_height="52dp" android:text="氛围灯 · 动态多色与音乐律动" />
+        <Button android:id="@+id/vehicleOpen" android:layout_width="match_parent" android:layout_height="52dp" android:text="车机接口 · USB 与诊断" />
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="8dp" android:text="仪表更新" android:textSize="18sp" android:textColor="@color/text_primary" android:textStyle="bold" />
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="8dp" android:paddingBottom="16dp" android:text="仅使用与当前仪表车型、硬件匹配的更新包。先停止投屏；安装期间保持供电与连接。上传与安装分开操作。" android:textSize="16sp" android:textColor="@color/text_secondary" />
         <Button android:id="@+id/updateInfo" android:layout_width="match_parent" android:layout_height="52dp" android:text="检查仪表更新能力" />

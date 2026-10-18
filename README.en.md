@@ -232,6 +232,10 @@ Thanks to everyone who reports issues and shares vehicle adaptation results, and
 
 ## Support
 
+Contact the [author](https://github.com/wayyoungboy) for custom development. Custom instrument firmware is a paid service, with scope, pricing and acceptance agreed separately. The code in this repository remains available under the MIT license.
+
+The 0.1.4 development source adds ambient-light control, 16-band playback analysis, local ADB, USB/NCM and headlight/theme integration. The native rhythm backend remains disabled until qualified on hardware. These changes are not a published Release or vehicle validation. See the [migration and acceptance checklist](docs/feature-migration.md) and [vehicle controls](docs/vehicle-interfaces.md); no flashable instrument firmware is provided yet.
+
 If you find the project useful, you can sponsor it on [Afdian (爱发电)](https://afdian.com/a/wayyoung). Sponsorship is entirely voluntary and does not affect features or access to updates.
 
 ## License
