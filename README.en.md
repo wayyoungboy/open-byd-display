@@ -43,8 +43,9 @@ The project is in the **update-pipeline research stage**. It provides the transp
 | --- | --- | --- |
 | Android head-unit app | `headunit/` | Picks, pre-checks, streams, queries, applies and cleans up cluster update jobs |
 | Host lab service | `firmware/` | A Python reference implementation of the cluster-side update service, bound to `127.0.0.1` only, operating on a sandbox directory |
+| Casting development | `headunit/`, `firmware/native/qnx66/` | Mirror, independent map/Presentation source, calibrated layouts, encoder overlays, strict receipts and reconnect; 70-frame host interop, Android/QNX devices unverified |
 | Native video core | `firmware/native/` | Independent C99 BVL1/LHF2 validation and loopback receiving, checked with real host H.264 decoding; not QNX firmware |
-| SDK-independent ARM build | `firmware/tools/qnx66_build.py` | Clang/LLD links an ARM32 probe, media library and single-session TCP/stdin player against an external original runtime; QNX execution remains unverified |
+| SDK-independent ARM build | `firmware/tools/qnx66_build.py` | Clang/LLD links an ARM32 probe, media library and continuous/short-session TCP and stdin player against an external original runtime; QNX execution remains unverified |
 | FUP2 packaging tool | `firmware/openbyddisplay/packages.py` | Generates Ed25519 keys and builds signed, target-bound FUP2 component packages |
 | Release tooling | `headunit/tools/`, `.github/workflows/` | CI, signed-APK release pipeline and release-asset generation |
 
@@ -108,7 +109,7 @@ Development artifacts from CI are signed differently from release APKs; use the 
 
 ### Build from source
 
-Create your own `headunit/local.properties` (pointing at your Android SDK) and a Python virtual environment, then:
+Install a C compiler and FFmpeg with libx264 for the Kotlin-to-C interoperability test. Create your own `headunit/local.properties` (pointing at your Android SDK) and a Python virtual environment, then:
 
 ```sh
 python3 -m pip install -r firmware/requirements.txt
@@ -126,6 +127,8 @@ Release builds are signed with a stable, dedicated Android key supplied through 
 ## Usage
 
 > Only use update packages that match your current cluster and come from a known source. Operate with the vehicle stationary and the power supply stable. Stop any casting first.
+
+Casting development status and remaining platform work are documented in [casting.md](docs/casting.md). Lyrics/navigation are currently encoded into video, not standalone transparent instrument layers.
 
 The app has a single screen:
 

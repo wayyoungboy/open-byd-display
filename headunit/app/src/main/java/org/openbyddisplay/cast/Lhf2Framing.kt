@@ -58,10 +58,10 @@ object Lhf2Framing {
     fun readReadyLine(input: InputStream): JSONObject {
         val line = ClusterWireProtocol.readLine(input) ?: error("stream_closed")
         val json = JSONObject(line)
-        require(json.optBoolean("ok", false) || json.optBoolean("ready", false)) {
+        require(json.opt("ok") == true && json.opt("ready") == true) {
             json.optString("error", "not_ready")
         }
-        require(json.optString("protocol", LHF2) == LHF2) { "unexpected_protocol" }
+        require(json.optString("protocol") == LHF2) { "unexpected_protocol" }
         return json
     }
 

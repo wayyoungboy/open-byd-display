@@ -36,6 +36,11 @@ class InstrumentUpdateService : Service() {
             if (action == "cancel") { cancelRequested.set(true); client?.close() }
             return START_NOT_STICKY
         }
+        if (org.openbyddisplay.cast.CastSafetyStore.blocked(this) || !InstrumentOperation.acquire("update")) {
+            busy.set(false)
+            stopForeground(true); stopSelf(startId)
+            return START_NOT_STICKY
+        }
         cancelRequested.set(false)
         val host = intent.getStringExtra("host").orEmpty()
         val uri = intent.getStringExtra("uri")
@@ -70,6 +75,7 @@ class InstrumentUpdateService : Service() {
                 }
                 Handler(Looper.getMainLooper()).post {
                     busy.set(false)
+                    InstrumentOperation.release("update")
                     stopForeground(true)
                     stopSelf()
                 }

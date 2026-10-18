@@ -324,6 +324,14 @@ class Model:
 
 
 class MediaTests(unittest.TestCase):
+    def test_failed_cleanup_is_not_relabelled_success_by_a_second_close(self):
+        model = Model(LIB)
+        self.assertEqual(model.open(), 0)
+        model.fail_at = model.calls + 1  # Hide parent fails once.
+        self.assertNotEqual(model.close(), 0)
+        self.assertNotEqual(model.close(), 0)
+        model.check_closed(self)
+
     def test_each_initialization_failure_releases_every_resource(self):
         baseline = Model(LIB)
         self.assertEqual(baseline.open(), 0)

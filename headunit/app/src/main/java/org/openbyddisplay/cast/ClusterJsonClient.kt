@@ -12,10 +12,12 @@ class ClusterJsonClient(
     private val soTimeoutMs: Int = 8_000,
 ) {
     fun exchange(port: Int, body: JSONObject): JSONObject {
+        CastOptions.privateIpv4(host)
         val payload = CastProtocol.encode(body) + "\n"
         Socket().use { socket ->
             socket.tcpNoDelay = true
             socket.soTimeout = soTimeoutMs
+            if (host.startsWith("192.168.77.")) socket.bind(InetSocketAddress("192.168.77.2", 0))
             socket.connect(InetSocketAddress(host, port), connectTimeoutMs)
             val output = socket.getOutputStream()
             output.write(payload.toByteArray(Charsets.UTF_8))

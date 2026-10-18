@@ -179,6 +179,7 @@ def build(libc, expected_digest, output, target, clang, lld):
             "aeabi": native / "qnx66/aeabi.c",
             "network": native / "qnx66/network.c",
             "io": native / "qnx66/io.c",
+            "stream": native / "qnx66/stream.c",
         }.items():
             obj = intermediate / f"{name}.o"
             extra = [] if source.suffix == ".S" else ["-std=c99", "-pedantic"]
@@ -214,7 +215,7 @@ def build(libc, expected_digest, output, target, clang, lld):
         library = stage / library_name
         version_map = intermediate / "exports.map"
         version_map.write_text(
-            "{ global: obd_crc32; obd_lhf2_*; obd_media_*; local: *; };\n"
+            "{ global: obd_crc32; obd_lhf2_*; obd_media_*; obd_stream_*; local: *; };\n"
         )
         command(
             link_flags
@@ -228,6 +229,7 @@ def build(libc, expected_digest, output, target, clang, lld):
                 objects["aeabi"],
                 objects["network"],
                 objects["io"],
+                objects["stream"],
                 str(view),
                 "-o",
                 str(library),
@@ -276,6 +278,7 @@ def build(libc, expected_digest, output, target, clang, lld):
                 objects["aeabi"],
                 objects["network"],
                 objects["io"],
+                objects["stream"],
                 str(view),
                 "-o",
                 str(player),

@@ -5,7 +5,7 @@
 | 目录 | 内容 |
 | --- | --- |
 | `native/core/` | C99 LHF2/CRC/NAL校验 |
-| `native/qnx66/` | 独立入口、运行探针、mm-renderer/Screen/mdevpush适配、单会话TCP播放器 |
+| `native/qnx66/` | 独立入口、运行探针、mm-renderer/Screen/mdevpush适配、持续/短会话TCP播放器 |
 | `native/host/`、`native/tests/` | 电脑接收器、生命周期替身及真实H.264实验 |
 | `tools/` | Clang/LLD构建、ELF检查、ARM指令模型 |
 | `openbyddisplay/`、`tests/` | FUP2验签、更新服务及增量试启动/回退实验 |

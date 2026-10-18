@@ -66,6 +66,8 @@ class Laboratory:
         self.cast_revision = 0
         self.cast_state = "idle"
         self.cast_profile_id = 1
+        self.cast_requests: dict[str, tuple[str, dict]] = {}
+        self.control_port = 47785
         for path in (self.root / "jobs").glob("*/state.json"):
             state = json.loads(path.read_text())
             if state["stage"] in ("receiving", "validating"):
@@ -163,6 +165,7 @@ class Laboratory:
             if directory.exists():
                 return dict(self.load(job_id), duplicate=True), False
             require(self.active is None, "update_busy")
+            require(self.cast_state == "idle", "cast_active")
             require(request.get("kind") == "components", "update_installer_unavailable")
             size = request.get("bytes")
             require(
@@ -252,6 +255,7 @@ class Laboratory:
 
     def apply(self, job_id: str) -> dict:
         with self.lock:
+            require(self.cast_state == "idle", "cast_active")
             state = self.load(job_id)
             if state["stage"] == "applied":
                 return dict(state, duplicate=True)
@@ -354,7 +358,6 @@ class Laboratory:
             state.update(ok=True, stage="cancelled", worker_active=False)
             return self.save(state)
 
-
     def cast_status(self) -> dict:
         with self.lock:
             return {
@@ -362,10 +365,15 @@ class Laboratory:
                 "epoch": self.cast_epoch,
                 "revision": self.cast_revision,
                 "state": self.cast_state,
-                "target_casting": self.cast_state == "playing",
+                "target_casting": self.cast_state != "idle",
+                "video_attached": False,
+                "property_readback": False,
+                "visual_verified": False,
+                "native_overlay": False,
+                "production_flashable": False,
                 "selected_profile_id": self.cast_profile_id,
                 "heartbeat_protocol": 1,
-                "heartbeat_port": 47785,
+                "heartbeat_port": self.control_port,
                 "runtime": "host-lab",
             }
 
@@ -408,62 +416,74 @@ class Laboratory:
             ],
         }
 
-    def cast_start(self, request: dict) -> dict:
-        require(isinstance(request.get("request_id"), str), "request_id_required")
-        profile = request.get("profile_id")
+    def cast_change(self, request: dict, op: str) -> dict:
         with self.lock:
-            self.cast_state = "playing"
-            self.cast_revision += 1
-            if isinstance(profile, int):
+            ident = request.get("request_id")
+            require(
+                isinstance(ident, str) and re.fullmatch(r"[A-Za-z0-9_-]{1,80}", ident),
+                "request_id_required",
+            )
+            fingerprint = json.dumps(request, sort_keys=True, separators=(",", ":"))
+            if ident in self.cast_requests:
+                old, response = self.cast_requests[ident]
+                require(old == fingerprint, "request_id_conflict")
+                return dict(response, duplicate=True)
+            require(request.get("epoch") == self.cast_epoch, "epoch_mismatch")
+            require(
+                type(request.get("expected_revision")) is int
+                and request["expected_revision"] == self.cast_revision,
+                "revision_conflict",
+            )
+            if op == "cast.start":
+                require(self.cast_state == "idle", "cast_active")
+                require(
+                    self.active is None
+                    and not any(
+                        json.loads(p.read_text())["stage"]
+                        in ("ready", "installing", "recovery_required")
+                        for p in (self.root / "jobs").glob("*/state.json")
+                    ),
+                    "update_busy",
+                )
+            if op != "cast.stop":
+                profile = request.get("profile_id", self.cast_profile_id)
+                require(
+                    type(profile) is int and profile in (1, 2, 3), "profile_invalid"
+                )
+                require(
+                    op != "cast.switch" or self.cast_state != "idle", "cast_not_active"
+                )
                 self.cast_profile_id = profile
-            return {
-                "ok": True,
-                "op": "cast.start",
-                "epoch": self.cast_epoch,
-                "revision": self.cast_revision,
-                "state": self.cast_state,
-                "selected_profile_id": self.cast_profile_id,
-                "runtime": "host-lab",
-            }
+                # This model has no video decoder or OEM HMI; never report playing.
+                self.cast_state = "waiting_video"
+            else:
+                self.cast_state = "idle"
+            self.cast_revision += 1
+            response = dict(self.cast_status(), op=op)
+            if len(self.cast_requests) >= 64:
+                del self.cast_requests[next(iter(self.cast_requests))]
+            self.cast_requests[ident] = (fingerprint, response)
+            return response
+
+    def cast_start(self, request: dict) -> dict:
+        return self.cast_change(request, "cast.start")
 
     def cast_stop(self, request: dict) -> dict:
-        with self.lock:
-            self.cast_state = "idle"
-            self.cast_revision += 1
-            return {
-                "ok": True,
-                "op": "cast.stop",
-                "epoch": self.cast_epoch,
-                "revision": self.cast_revision,
-                "state": self.cast_state,
-                "target_casting": False,
-                "runtime": "host-lab",
-            }
+        return self.cast_change(request, "cast.stop")
 
     def cast_switch(self, request: dict) -> dict:
-        require(isinstance(request.get("request_id"), str), "request_id_required")
-        with self.lock:
-            self.cast_revision += 1
-            return {
-                "ok": True,
-                "op": "cast.switch",
-                "epoch": self.cast_epoch,
-                "revision": self.cast_revision,
-                "state": self.cast_state,
-                "runtime": "host-lab",
-            }
+        return self.cast_change(request, "cast.switch")
 
     def cast_heartbeat(self, request: dict) -> dict:
         with self.lock:
-            require(self.cast_state == "playing", "cast_not_active")
+            require(self.cast_state != "idle", "cast_not_active")
             require(request.get("epoch") == self.cast_epoch, "epoch_mismatch")
-            return {
-                "ok": True,
-                "op": "cast.heartbeat",
-                "epoch": self.cast_epoch,
-                "revision": self.cast_revision,
-                "runtime": "host-lab",
-            }
+            require(
+                type(request.get("revision")) is int
+                and request["revision"] == self.cast_revision,
+                "revision_conflict",
+            )
+            return dict(self.cast_status(), op="cast.heartbeat")
 
 
 class Handler(socketserver.StreamRequestHandler):
@@ -508,12 +528,8 @@ class Handler(socketserver.StreamRequestHandler):
                 self.send(lab.cast_switch(request))
             elif op == "cast.heartbeat":
                 self.send(lab.cast_heartbeat(request))
-            elif op == "cast.arm":
-                self.send({"ok": True, "op": "cast.arm", "runtime": "host-lab"})
-            elif op == "cast.set":
-                self.send({"ok": True, "op": "cast.set", "runtime": "host-lab"})
-            elif op == "cast.keepalive":
-                self.send({"ok": True, "op": "cast.keepalive", "runtime": "host-lab"})
+            elif op in {"cast.arm", "cast.set", "cast.keepalive"}:
+                raise ValueError("native_video_control_unavailable")
             elif op in {
                 "music.show",
                 "music.hide",
@@ -522,7 +538,7 @@ class Handler(socketserver.StreamRequestHandler):
                 "music.config.set",
                 "navigation.config.set",
             }:
-                self.send({"ok": True, "op": op, "runtime": "host-lab", "overlay": True})
+                raise ValueError("native_overlay_unavailable")
             elif op == "update.upload":
                 lab.receive(request, self.rfile, self.send)
             elif op == "update.status":
@@ -559,6 +575,7 @@ class Server(socketserver.ThreadingTCPServer):
     def __init__(self, port: int, lab: Laboratory) -> None:
         self.lab = lab
         super().__init__(("127.0.0.1", port), Handler)
+        lab.control_port = self.server_address[1]
 
 
 def main() -> None:

@@ -1,265 +1,232 @@
 package org.openbyddisplay.cast
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
-import android.app.Service
+import android.app.*
 import android.content.Context
 import android.content.Intent
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
-import android.os.Build
 import android.os.Handler
-import android.os.HandlerThread
 import android.os.IBinder
+import android.os.Looper
 import android.os.SystemClock
-import android.util.Log
 import org.json.JSONObject
+import org.openbyddisplay.InstrumentOperation
+import org.openbyddisplay.InstrumentUpdateStore
 import org.openbyddisplay.MainActivity
+import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 
-/**
- * MediaProjection → H.264 → BVL1/LHF2 cast service for the self-developed path.
- * Requires a matching instrument receiver; host-lab can accept video for protocol tests only.
- */
+/** Serial capture/resource owner; stop only signals it and unblocks the socket. */
 class CastForegroundService : Service() {
-    private val running = AtomicBoolean(false)
-    private var projection: MediaProjection? = null
-    private var virtualDisplay: VirtualDisplay? = null
-    private var encoder: H264Encoder? = null
-    private var video: VideoStreamClient? = null
-    private var worker: HandlerThread? = null
-    private var handler: Handler? = null
-    private var epoch: String = CastProtocol.newEpoch()
-    private var revision: Int = 0
-    private var profile: CastProfile? = null
-    private var host: String = CastPorts.DEFAULT_HOST
+    private class Run {
+        val owner = java.util.UUID.randomUUID().toString()
+        val stop = AtomicBoolean(false)
+        val active = AtomicReference<VideoStreamClient?>()
+        var touched = false
+        var stopDeadline: Runnable? = null
+    }
+    private val currentRun = AtomicReference<Run?>()
+    private var latestStartId = 0
+    private val started = AtomicBoolean(false)
+    private val worker = Executors.newSingleThreadExecutor()
+    private val main = Handler(Looper.getMainLooper())
 
     override fun onBind(intent: Intent?): IBinder? = null
-
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        when (intent?.action) {
-            ACTION_STOP -> {
-                stopCast("用户停止投屏")
-                stopSelf()
-                return START_NOT_STICKY
-            }
-        }
-        if (!running.compareAndSet(false, true)) return START_STICKY
-        host = intent?.getStringExtra(EXTRA_HOST) ?: CastSettings.host(this)
-        val fullWidth = intent?.getBooleanExtra(EXTRA_FULL_WIDTH, CastSettings.fullWidth(this)) ?: true
-        val resultCode = intent?.getIntExtra(EXTRA_RESULT_CODE, 0) ?: 0
-        val data = intent?.getParcelableExtra<Intent>(EXTRA_DATA)
-        if (resultCode == 0 || data == null) {
-            CastSessionStore.idle(this, "缺少录屏授权")
-            running.set(false)
-            stopSelf()
+        latestStartId = startId
+        if (intent?.action == ACTION_STOP) {
+            requestStop()
+            if (!started.get()) stopSelf(startId)
             return START_NOT_STICKY
         }
-        startForeground(NOTIF_ID, notification("正在连接仪表…"))
-        CastSessionStore.busy = true
-        worker = HandlerThread("obd-cast").also { it.start() }
-        handler = Handler(worker!!.looper)
-        handler!!.post { runCatching { startPipeline(resultCode, data, fullWidth) }.onFailure { fail(it) } }
-        return START_STICKY
-    }
-
-    private fun startPipeline(resultCode: Int, data: Intent, fullWidth: Boolean) {
-        val client = ClusterJsonClient(host)
-        val profiles = loadProfiles(client)
-        val selected = CastProfile.select(profiles, fullWidth)
-        profile = selected
-        epoch = CastProtocol.newEpoch()
-        revision = 0
-        val start = client.startSession(selected.profileId, epoch, revision)
-        if (start.optBoolean("ok", false)) {
-            epoch = start.optString("epoch", epoch)
-            revision = start.optInt("revision", revision)
+        if (intent == null || !started.compareAndSet(false, true)) return START_NOT_STICKY
+        val options = runCatching { CastOptions.parse(JSONObject(intent.getStringExtra(EXTRA_OPTIONS) ?: "{}")) }.getOrElse {
+            started.set(false); CastSessionStore.idle(this, "投屏设置无效"); stopSelf(startId); return START_NOT_STICKY
         }
-        val options = CastProtocol.windowOptions(selected)
-        runCatching { client.arm(options) }
-        runCatching { client.setWindow(options) }
-
-        val fps = CastSettings.fps(this)
-        val stream = VideoStreamClient(host, selected.width, selected.height, fps)
-        stream.connect()
-        video = stream
-
-        val enc = H264Encoder(selected.width, selected.height, fps) { bytes, ptsUs, key ->
-            stream.sendAccessUnit(bytes, (ptsUs / 1000L).toInt(), key)
+        val data = intent.getParcelableExtra<Intent>(EXTRA_DATA)
+        val code = intent.getIntExtra(EXTRA_RESULT_CODE, 0)
+        if ((options.source == "mirror" && (data == null || code != Activity.RESULT_OK)) ||
+            !InstrumentUpdateStore.canReplace(InstrumentUpdateStore.read(this)) || !InstrumentOperation.acquire("cast")) {
+            started.set(false); CastSessionStore.idle(this, "请先结束更新任务，并取得本次录屏授权"); stopSelf(startId)
+            return START_NOT_STICKY
         }
-        enc.start()
-        encoder = enc
-
-        val mgr = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-        val proj = mgr.getMediaProjection(resultCode, data)
-        projection = proj
-        virtualDisplay = proj.createVirtualDisplay(
-            "OpenBYDDisplay",
-            selected.width,
-            selected.height,
-            resources.displayMetrics.densityDpi,
-            DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
-            enc.inputSurface,
-            null,
-            handler,
-        )
-        CastSessionStore.write(
-            this,
-            JSONObject()
-                .put("state", "playing")
-                .put("message", "投屏进行中 ${selected.width}x${selected.height}@$fps")
-                .put("target_casting", true)
-                .put("profile_id", selected.profileId)
-                .put("width", selected.width)
-                .put("height", selected.height)
-                .put("epoch", epoch)
-                .put("revision", revision)
-                .put("host", host),
-        )
-        nm().notify(NOTIF_ID, notification("投屏中 ${selected.width}×${selected.height}"))
-        scheduleDrainAndKeepalive()
+        val run = Run()
+        currentRun.set(run); CastSessionStore.busy = true
+        try {
+            val type = if (options.source == "mirror") android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
+                else android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
+            if (android.os.Build.VERSION.SDK_INT >= 29) startForeground(NOTIF_ID, notification("正在连接自研视频服务"), type)
+            else startForeground(NOTIF_ID, notification("正在连接自研视频服务"))
+            worker.execute { pipeline(options, code, data, run) }
+        } catch (_: Exception) {
+            currentRun.compareAndSet(run, null); started.set(false); CastSessionStore.busy = false; InstrumentOperation.release("cast")
+            CastSessionStore.idle(this, "系统未允许启动投屏服务"); stopSelf(startId)
+        }
+        return START_NOT_STICKY
     }
-
-    private fun loadProfiles(client: ClusterJsonClient): List<CastProfile> {
-        val remote = runCatching { client.profileGet() }.getOrNull()
-        val array = remote?.optJSONArray("profiles")
-        if (array != null && array.length() > 0) return CastProfile.parseList(array)
-        assets.open("instrument-defaults/openbyd-factory.json").use { input ->
-            val factory = JSONObject(input.readBytes().toString(Charsets.UTF_8))
-            return CastProfile.parseList(factory.getJSONArray("cast_profiles"))
+    private fun requestStop() {
+        val run = currentRun.get() ?: return
+        run.stop.set(true)
+        // Give the owner a chance to send EOS and read cleanup; then bound shutdown.
+        if (run.stopDeadline == null) {
+            run.stopDeadline = Runnable { run.active.get()?.close() }.also { main.postDelayed(it, 5500) }
         }
     }
-
-    private fun scheduleDrainAndKeepalive() {
-        val h = handler ?: return
-        val started = SystemClock.elapsedRealtime()
-        h.post(object : Runnable {
-            override fun run() {
-                if (!running.get()) return
-                runCatching { encoder?.drain() }
-                val elapsed = SystemClock.elapsedRealtime() - started
-                if (elapsed % 3000L < 40L) {
-                    runCatching {
-                        ClusterJsonClient(host).heartbeat(epoch, revision)
-                        ClusterJsonClient(host).receiverKeepalive()
-                    }
+    private fun pipeline(options: CastOptions, resultCode: Int, data: Intent?, run: Run) {
+        val stop = run.stop
+        val active = run.active
+        var projection: MediaProjection? = null
+        var display: VirtualDisplay? = null
+        var encoder: H264Encoder? = null
+        var renderer: CastFrameRenderer? = null
+        var pattern: CastPattern? = null
+        val overlays = CastOverlaySource(this)
+        var clean = false
+        var message = "投屏已结束；仪表清理结果未确认"
+        try {
+            fun current() { check(!stop.get()) { "投屏已停止" } }
+            overlays.start()
+            val metrics = resources.displayMetrics
+            val (width, height) = if (options.source == "mirror") options.encodedSize(metrics.widthPixels, metrics.heightPixels)
+                else 1280 to 480
+            current()
+            encoder = H264Encoder(width, height, options.fps, options.bitrate)
+            encoder.start()
+            current()
+            renderer = CastFrameRenderer(width * options.renderScale, height * options.renderScale,
+                width, height, encoder.inputSurface!!, options.fps, options.softEdge / 100f, options.horizontalFlip, overlays::text) {
+                stop.set(true); active.get()?.close()
+                if (currentRun.get() === run) CastSessionStore.write(this, JSONObject().put("message", it).put("state", "error"))
+            }
+            renderer.start()
+            current()
+            if (options.source == "mirror") {
+                projection = getSystemService(MediaProjectionManager::class.java).getMediaProjection(resultCode, data!!)
+                projection.registerCallback(object : MediaProjection.Callback() {
+                    override fun onStop() { stop.set(true); active.get()?.close() }
+                }, main)
+                current()
+                display = projection.createVirtualDisplay("OpenBYDDisplay Mirror", width * options.renderScale,
+                    height * options.renderScale, metrics.densityDpi, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
+                    renderer.inputSurface, null, main)
+            } else {
+                display = checkNotNull(getSystemService(DisplayManager::class.java).createVirtualDisplay(
+                    if (options.source == "flyscreen") options.virtualDisplayName else "OpenBYDDisplay Navigation",
+                    width * options.renderScale, height * options.renderScale, 160,
+                    renderer.inputSurface, DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY or DisplayManager.VIRTUAL_DISPLAY_FLAG_PRESENTATION or
+                        (if (options.source == "flyscreen") DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC else 0)))
+                val targetDisplay = display.display
+                current()
+                if (options.source == "pattern") pattern = CastPattern.show(this, targetDisplay, main, stop)
+                else {
+                    val launched = runCatching {
+                        val launch = packageManager.getLaunchIntentForPackage(options.mapPackage) ?: error("未安装所选地图")
+                        val bundle = ActivityOptions.makeBasic().apply { launchDisplayId = if (options.source == "flyscreen") 0 else targetDisplay.displayId }.toBundle()
+                        startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), bundle)
+                        if (options.source == "flyscreen") {
+                            sendBroadcast(Intent("com.autonavi.amapauto.AUTO_WIDGET_MAIN_MAP").setPackage(options.mapPackage).putExtra("displayId", targetDisplay.displayId))
+                        }
+                    }.isSuccess
+                    CastSessionStore.write(this, JSONObject().put("state", "waiting_source")
+                        .put("message", if (launched) "已请求地图启动；副地图是否绑定本次副屏需核对" else "系统拒绝副屏启动。请通过 ADB 在副屏启动地图")
+                        .put("display_id", targetDisplay.displayId).put("target_casting", true))
                 }
-                // optional overlays
-                maybePushOverlays()
-                h.postDelayed(this, 33)
             }
-        })
-    }
-
-    private fun maybePushOverlays() {
-        if (!CastSettings.lyricsEnabled(this) && !CastSettings.navEnabled(this)) return
-        val client = ClusterJsonClient(host)
-        if (CastSettings.lyricsEnabled(this)) {
-            runCatching {
-                client.musicShow(
-                    MusicOverlayProtocol.track(
-                        title = "OpenBYDDisplay",
-                        artist = "lab",
-                        lyricLines = listOf("自研歌词叠加实验"),
-                        playing = true,
-                    ),
-                )
+            var failures = 0
+            var lastStatus = 0L
+            while (!stop.get()) {
+                val stream = VideoStreamClient(options)
+                active.set(stream)
+                var sent = false
+                try {
+                    current()
+                    val bounds = stream.open(width, height) {
+                        current(); CastSafetyStore.begin(this, run.owner); run.touched = true
+                    }
+                    current()
+                    val rect = bounds.preset(options.layout).fit(width, height)
+                    stream.configure(rect)
+                    encoder.reconnect()
+                    var lastTraffic = SystemClock.elapsedRealtime()
+                    val firstDeadline = lastTraffic + 15_000
+                    while (!stop.get()) {
+                        val frame = encoder.next()
+                        val now = SystemClock.elapsedRealtime()
+                        if (frame != null) {
+                            val receipt = stream.frame(frame.au, frame.ptsMs)
+                            sent = true; failures = 0; lastTraffic = now
+                            if (now - lastStatus > 1000) {
+                                val confirmed = receipt.opt("property_readback") == true && VideoStreamClient.integer(receipt, "screen_posts") > 0
+                                CastSessionStore.write(this, JSONObject().put("state", if (confirmed) "window_submitted" else "waiting_window")
+                                    .put("message", if (confirmed) "仪表已回读视频窗口；实际画面待实车确认" else "视频帧已提交，等待窗口回读")
+                                    .put("target_casting", true).put("submitted", receipt.getLong("submitted"))
+                                    .put("host", options.host).put("width", width).put("height", height)
+                                    .put("display_id", display?.display?.displayId ?: -1).put("visual_verified", false))
+                                lastStatus = now
+                            }
+                        } else if (now - lastTraffic >= 1000) {
+                            stream.heartbeat(); lastTraffic = now
+                        }
+                        check(sent || now < firstDeadline) { "15 秒内未取得带 SPS/PPS 的关键帧" }
+                    }
+                    if (sent) { stream.finish(); clean = CastSafetyStore.confirmed(this, run.owner) }
+                } catch (e: Exception) {
+                    if (run.touched) CastSafetyStore.uncertain(this)
+                    if (stop.get()) break
+                    failures++
+                    check(failures <= options.reconnects) { "视频连接失败，已停止：${e.message}" }
+                    CastSessionStore.write(this, JSONObject().put("state", "reconnecting").put("target_casting", true)
+                        .put("message", "视频连接中断，正在重连 $failures/${options.reconnects}"))
+                    repeat(failures * 10) { if (!stop.get()) Thread.sleep(100) }
+                } finally { active.compareAndSet(stream, null); stream.close() }
+            }
+            if (clean) message = "投屏已停止，仪表已确认资源清理"
+        } catch (e: Exception) {
+            message = if (stop.get()) message else "投屏未完成：${e.message?.take(160)}"
+        } finally {
+            active.getAndSet(null)?.close()
+            overlays.close()
+            pattern?.close()
+            var localClean = runCatching { display?.release() }.isSuccess
+            localClean = runCatching { projection?.stop() }.isSuccess && localClean
+            renderer?.close()
+            localClean = (renderer?.awaitRelease() ?: true) && localClean
+            encoder?.close()
+            localClean = (encoder?.releaseSucceeded ?: true) && localClean
+            if ((!clean && run.touched) || !localClean) runCatching { CastSafetyStore.uncertain(this, local = !localClean) }
+            if (CastSafetyStore.blocked(this)) message += "；已阻止更新，请核对仪表恢复状态"
+            main.post {
+                run.stopDeadline?.let(main::removeCallbacks)
+                if (currentRun.compareAndSet(run, null)) {
+                    CastSessionStore.busy = false
+                    CastSessionStore.idle(this, message)
+                    started.set(false)
+                    if (localClean) InstrumentOperation.release("cast")
+                    stopForeground(true); stopSelfResult(latestStartId)
+                }
             }
         }
-        if (CastSettings.navEnabled(this)) {
-            runCatching {
-                client.navigationShow(
-                    NavOverlayProtocol.guidance(
-                        nextRoad = "实验路段",
-                        distanceMeters = 200,
-                        icon = "straight",
-                    ),
-                )
-            }
-        }
     }
-
-    private fun fail(error: Throwable) {
-        Log.e(TAG, "cast failed", error)
-        stopCast(error.message ?: "投屏失败")
-        stopSelf()
-    }
-
-    private fun stopCast(message: String) {
-        if (!running.getAndSet(false) && !CastSessionStore.busy) {
-            CastSessionStore.idle(this, message)
-            return
-        }
-        handler?.removeCallbacksAndMessages(null)
-        runCatching {
-            ClusterJsonClient(host).stopSession(epoch, revision)
-        }
-        if (CastSettings.lyricsEnabled(this)) runCatching { ClusterJsonClient(host).musicHide() }
-        if (CastSettings.navEnabled(this)) runCatching { ClusterJsonClient(host).navigationHide() }
-        runCatching { virtualDisplay?.release() }
-        runCatching { encoder?.close() }
-        runCatching { video?.close() }
-        runCatching { projection?.stop() }
-        virtualDisplay = null
-        encoder = null
-        video = null
-        projection = null
-        worker?.quitSafely()
-        worker = null
-        handler = null
-        CastSessionStore.busy = false
-        CastSessionStore.idle(this, message)
-        stopForeground(true)
-    }
-
-    override fun onDestroy() {
-        stopCast("投屏服务结束")
-        super.onDestroy()
-    }
-
+    override fun onDestroy() { currentRun.get()?.let { it.stop.set(true); it.active.get()?.close() }; worker.shutdown(); super.onDestroy() }
     private fun notification(text: String): Notification {
-        val channelId = "obd_cast"
-        if (Build.VERSION.SDK_INT >= 26) {
-            nm().createNotificationChannel(
-                NotificationChannel(channelId, "投屏", NotificationManager.IMPORTANCE_LOW),
-            )
-        }
-        val pi = PendingIntent.getActivity(
-            this, 0, Intent(this, MainActivity::class.java),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-        val stop = PendingIntent.getService(
-            this, 1,
-            Intent(this, CastForegroundService::class.java).setAction(ACTION_STOP),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-        val builder = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(this, channelId)
-        else Notification.Builder(this)
-        return builder.setContentTitle("OpenBYDDisplay")
-            .setContentText(text)
+        val nm = getSystemService(NotificationManager::class.java)
+        nm.createNotificationChannel(NotificationChannel("obd_cast", "仪表投屏", NotificationManager.IMPORTANCE_LOW))
+        val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        return Notification.Builder(this, "obd_cast").setContentTitle("OpenBYDDisplay").setContentText(text)
             .setSmallIcon(android.R.drawable.ic_menu_view)
-            .setContentIntent(pi)
-            .addAction(Notification.Action.Builder(null, "停止", stop).build())
-            .setOngoing(true)
-            .build()
+            .setContentIntent(PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java), flags))
+            .addAction(Notification.Action.Builder(null, "停止", PendingIntent.getService(this, 1, stopIntent(this), flags)).build())
+            .setOngoing(true).build()
     }
-
-    private fun nm() = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
     companion object {
-        private const val TAG = "ObdCast"
-        private const val NOTIF_ID = 0x4f424443
+        private const val NOTIF_ID = 7102
         const val ACTION_STOP = "org.openbyddisplay.cast.STOP"
         const val EXTRA_RESULT_CODE = "resultCode"
         const val EXTRA_DATA = "data"
-        const val EXTRA_HOST = "host"
-        const val EXTRA_FULL_WIDTH = "fullWidth"
-
-        fun stopIntent(context: Context): Intent =
-            Intent(context, CastForegroundService::class.java).setAction(ACTION_STOP)
+        const val EXTRA_OPTIONS = "options"
+        fun stopIntent(context: Context) = Intent(context, CastForegroundService::class.java).setAction(ACTION_STOP)
     }
 }

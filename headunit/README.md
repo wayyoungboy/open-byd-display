@@ -9,4 +9,4 @@ Android源码、Gradle工程、自启/ADB助手、发布签名配置及APK发布
 python3 headunit/tools/adb_setup.py --serial SERIAL
 ```
 
-产物为`headunit/app/build/outputs/apk/debug/app-debug.apk`，日常安装使用GitHub Releases中的稳定签名APK。此App目前为更新链路客户端，自研视频编码发送尚未接入。仪表端源码和原生构建见[firmware](../firmware/README.md)。
+产物为`headunit/app/build/outputs/apk/debug/app-debug.apk`，日常安装使用GitHub Releases中的稳定签名APK。已接入持续视频发送、独立地图/飞屏副地图和本地数据合成；能力和验证边界见[车机投屏](../docs/casting.md)。尚未完成车机/QNX实物验收。仪表端源码和原生构建见[firmware](../firmware/README.md)。

@@ -28,6 +28,7 @@ object MusicOverlayProtocol {
             val m = LRC_LINE.matchEntire(line.trim()) ?: continue
             val min = m.groupValues[1].toLong()
             val sec = m.groupValues[2].toLong()
+            if (sec >= 60 || out.size >= 10_000) continue
             val frac = m.groupValues[3].padEnd(3, '0').take(3).toLongOrNull() ?: 0L
             val ms = min * 60_000 + sec * 1_000 + frac
             val body = m.groupValues[4].trim()
@@ -39,7 +40,7 @@ object MusicOverlayProtocol {
     fun linesAt(timeline: List<Pair<Long, String>>, positionMs: Long, count: Int): List<String> {
         if (timeline.isEmpty() || count <= 0) return emptyList()
         var idx = timeline.indexOfLast { it.first <= positionMs }
-        if (idx < 0) idx = 0
+        if (idx < 0) return emptyList()
         val start = (idx - count / 2).coerceAtLeast(0)
         return timeline.drop(start).take(count).map { it.second }
     }

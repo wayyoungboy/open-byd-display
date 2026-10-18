@@ -2,7 +2,7 @@
 
 传输为 USB NCM 网络上的 TCP JSON 行（默认47785）；现有帧协议保留 `update.info/upload/status/apply/cancel`，本项目自研端不接收或要求商业 Token/client_time。电脑实验服务只绑定127.0.0.1，不能作为实车QNX服务使用。
 
-先读 `update.info`，确认 update_protocol=2、receive_available、对应 apply_available 和组件公钥状态。实验服务只允许components安装，firmware_apply_available固定false。`cast.status`在实验端只报告模拟idle，没有实现投屏接收或渲染。
+先读 `update.info`，确认 update_protocol=2、receive_available、对应 apply_available 和组件公钥状态。实验服务只允许components安装，firmware_apply_available固定false。`cast.status`在实验端只报告idle或waiting_video模型状态，不实现投屏接收或渲染。模型校验epoch/revision和请求去重；没有视频时不会报告playing，独立overlay操作返回不可用。
 
 上传请求带 op、update_id（32位小写hex）、kind（firmware/components）、bytes。先收同ID的ok/ready，再发恰好bytes个原始字节，最后读该ID/kind/stage。不要复用4MiB主题上传上限；整包上限512MiB，组件payload上限256MiB加头清单。此路径不在首行加入sha256；包内清单/SV格式承担相应完整性检查。
 

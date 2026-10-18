@@ -13,6 +13,10 @@ data class CastProfile(
     val opacity: Int = 255,
     val radius: Int = 0,
 ) {
+    init {
+        require(profileId in 1..255 && themeId in 0..4 && radius == 0 && opacity in 0..255)
+        CastRect(x, y, width, height)
+    }
     val area: Long get() = width.toLong() * height.toLong()
 
     fun toJson(): JSONObject = JSONObject()
@@ -27,18 +31,22 @@ data class CastProfile(
 
     companion object {
         fun parse(obj: JSONObject): CastProfile = CastProfile(
-            profileId = obj.getInt("profile_id"),
+            profileId = VideoStreamClient.integer(obj, "profile_id").toInt(),
             themeId = obj.optInt("theme_id", 4),
             x = obj.optInt("x", 0),
             y = obj.optInt("y", 0),
-            width = obj.getInt("width"),
-            height = obj.getInt("height"),
+            width = VideoStreamClient.integer(obj, "width").also { require(it in 2..1920) }.toInt(),
+            height = VideoStreamClient.integer(obj, "height").also { require(it in 2..1080) }.toInt(),
             opacity = obj.optInt("opacity", 255),
             radius = obj.optInt("radius", 0),
         )
 
-        fun parseList(array: JSONArray): List<CastProfile> =
-            (0 until array.length()).map { parse(array.getJSONObject(it)) }
+        fun parseList(array: JSONArray): List<CastProfile> {
+            require(array.length() in 1..16)
+            val profiles = (0 until array.length()).map { parse(array.getJSONObject(it)) }
+            require(profiles.map { it.profileId }.toSet().size == profiles.size)
+            return profiles
+        }
 
         /**
          * Prefer largest even-dimension area for full-width, smallest for windowed.
