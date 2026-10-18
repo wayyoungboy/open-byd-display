@@ -10,6 +10,8 @@
 - [Issues：问题与适配记录](https://github.com/wayyoungboy/open-byd-display/issues)
 - [Actions：构建与测试](https://github.com/wayyoungboy/open-byd-display/actions)
 
+支持项目：[爱发电赞助](https://afdian.com/a/wayyoung)。赞助完全自愿，不影响软件功能和更新下载。
+
 ## 当前阶段
 
 v0.1.0 是**更新链路研发版**：Android 客户端可选包、预检、流式上传、查询、提交安装和清理任务；电脑实验服务可验签、校验目标、暂存组件并切换实验目录中的版本指针。Android 上传与安装分开操作，不会开机自动刷写，结果不明时不自动重复提交。

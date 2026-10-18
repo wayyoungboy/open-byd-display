@@ -14,4 +14,4 @@
 
 ## 可选赞助入口
 
-`.github/FUNDING.yml` 已预留 Buy Me a Coffee 配置，目前没有启用收款链接。维护者在 [Buy Me a Coffee](https://buymeacoffee.com/) 注册并开通收款主页后，核对完整主页链接，将配置中的用户名替换为实际值并取消注释，经PR合入main即可启用GitHub赞助按钮；README可添加同一主页链接。不要填写银行信息、平台密钥或占位收款账号。赞助不作为使用功能或下载更新的条件。配置格式见 [GitHub官方说明](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository)。
+GitHub赞助按钮和README均指向维护者提供的[爱发电主页](https://afdian.com/a/wayyoung)。`.github/FUNDING.yml` 使用 `custom` 配置该公开链接；变更赞助地址时经PR同步更新两处入口。赞助完全自愿，不作为使用功能或下载更新的条件。配置格式见 [GitHub官方说明](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository)。
