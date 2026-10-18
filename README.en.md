@@ -43,6 +43,7 @@ The project is in the **update-pipeline research stage**. It provides the transp
 | --- | --- | --- |
 | Android head-unit app | `app/` | Picks, pre-checks, streams, queries, applies and cleans up cluster update jobs |
 | Host lab service | `instrument/` | A Python reference implementation of the cluster-side update service, bound to `127.0.0.1` only, operating on a sandbox directory |
+| Native video core | `instrument/native/` | Independent C99 BVL1/LHF2 validation and loopback receiving, checked with real host H.264 decoding; not QNX firmware |
 | FUP2 packaging tool | `instrument/openbyddisplay/packages.py` | Generates Ed25519 keys and builds signed, target-bound FUP2 component packages |
 | Release tooling | `tools/`, `.github/workflows/` | CI, signed-APK release pipeline and release-asset generation |
 
@@ -68,7 +69,9 @@ Implemented in this repository:
 
 Signature, digest, target-model and hardware checks are intentionally kept: they prevent tampering and mis-flashing. This project does **not** remove any third-party firmware's own authorization or trusted public keys; packages signed with your own key only work with a service that trusts that key.
 
-**Not yet implemented here:** cluster-side H.264 receiving/rendering, navigation and lyrics casting, fly-screen layout, vignette mask, flashable QNX firmware, automatic OTA.
+The [native receiver](instrument/native/README.md) now validates and receives BVL1/LHF2 streams on the host loopback interface. Tests decode real H.264 after receipt. The [instrument implementation notes](docs/instrument-native.md) describe the platform contracts derived from user-provided reference firmware.
+
+**Not yet implemented here:** QNX H.264 receiving/rendering, navigation and lyrics casting, fly-screen layout, vignette mask, flashable QNX firmware, automatic OTA.
 
 ## Supported vehicles and requirements
 

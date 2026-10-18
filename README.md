@@ -33,6 +33,7 @@
 | 开机自启 | 用户开启后尝试打开App；系统限制与权限状态可见 |
 | ADB辅助配置 | 只读权限/IPv4诊断；显式配置后台打开权限 |
 | 自研服务实验 | 回环TCP服务、Ed25519验签、目标绑定与实验版本切换 |
+| 原生视频核心 | C99 BVL1/LHF2回环接收、帧校验及真实H.264解码实验 |
 
 仪表端投屏接收、QNX原生更新后端及整车恢复流程仍在研发。`instrument/` 只监听电脑回环地址，只操作实验目录，不运行包内`install.sh`、写车辆分区或修改启动记录。开机自启不会恢复上传、提交安装或自动投屏。
 
@@ -61,6 +62,7 @@
 | --- | --- |
 | 配置ADB、开机自启 | [ADB与自启](docs/adb-and-startup.md) |
 | 运行电脑实验服务、制作自签名包 | [仪表端实验](docs/instrument-lab.md) |
+| 了解自研仪表固件与原生视频进度 | [固件实现](docs/instrument-native.md) / [原生核心](instrument/native/README.md) |
 | 研究上传、查询及安装协议 | [更新协议](docs/update-protocol.md) |
 | 了解签名、构建与版本分发 | [GitHub开发与分发](docs/github-distribution.md) |
 | 查看构建或提交适配问题 | [Actions](https://github.com/wayyoungboy/open-byd-display/actions) / [Issues](https://github.com/wayyoungboy/open-byd-display/issues) |
