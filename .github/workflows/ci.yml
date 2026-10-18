@@ -6,6 +6,20 @@ on:
 permissions:
   contents: read
 jobs:
+  native-video:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Install host decode test dependency
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+      - name: Build and check native receiver on the host
+        run: |
+          cmake -S instrument/native -B /tmp/openbyd-video-build -DOBD_SANITIZE=ON -DCMAKE_BUILD_TYPE=Debug
+          cmake --build /tmp/openbyd-video-build
+          ctest --test-dir /tmp/openbyd-video-build --output-on-failure
+          python3 -O instrument/native/tests/check_real_video.py /tmp/openbyd-video-build/obd-lhf2-unpack
+          python3 -O instrument/native/tests/check_tcp.py /tmp/openbyd-video-build/obd-bvl1-receive
   checks:
     runs-on: ubuntu-latest
     steps:
