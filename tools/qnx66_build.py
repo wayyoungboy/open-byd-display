@@ -37,7 +37,9 @@ def executable(value):
     resolved = shutil.which(value)
     if not resolved:
         raise ValueError(f"Tool not found: {value}")
-    return str(Path(resolved).resolve())
+    # LLVM's multicall driver selects ELF/Mach-O/COFF by the invocation name.
+    # Resolving Linux's ld.lld symlink to the generic lld breaks that dispatch.
+    return str(Path(resolved).absolute())
 
 
 def inspect(data, exports, kind):

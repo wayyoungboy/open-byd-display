@@ -12,7 +12,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from qnx66_build import build
+from qnx66_build import build, command, executable
 from qnx66_elf import link_view, runtime_symbols
 from arm_model import probe_model
 from elftools.elf.elffile import ELFFile
@@ -107,6 +107,22 @@ class ToolchainTest(unittest.TestCase):
         self.assertIsNotNone(view.get_section_by_name(".dynsym"))
         self.assertEqual(runtime_symbols(self.original)[2], runtime_symbols(result)[2])
         self.assertEqual(link_view(self.full), self.full)
+
+    def test_multicall_linker_keeps_frontend_invocation_name(self):
+        driver = self.root / "generic-llvm-driver"
+        driver.write_text(
+            f"#!{sys.executable}\n"
+            "from pathlib import Path\nimport sys\n"
+            "if Path(sys.argv[0]).name != 'ld.lld': raise SystemExit(1)\n"
+            "print('LLD synthetic ELF frontend')\n"
+        )
+        driver.chmod(0o755)
+        frontend = self.root / "ld.lld"
+        frontend.symlink_to(driver)
+        self.assertEqual(
+            command([executable(str(frontend)), "--version"]),
+            "LLD synthetic ELF frontend",
+        )
 
     def test_wrong_machine_or_float_abi_rejected(self):
         for offset, value in ((18, 62), (36, 0x05000400)):
