@@ -196,7 +196,7 @@ Use feature branches and pull requests; CI runs the Python and Kotlin tests, And
 
 ## Acknowledgements
 
-Special thanks to 迷加 and 远方的小熊猫智能守卫 for their help and support.
+Special thanks to 迪加 and 远方的小熊猫智能守卫 for their help and support.
 
 Thanks also to everyone who reports issues and shares vehicle adaptation results, and to the Kotlin, AndroidX, Gradle and `cryptography` projects.
 
