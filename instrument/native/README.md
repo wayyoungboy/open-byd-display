@@ -28,4 +28,6 @@ ready回复为JSON行，标明`backend=host-file`、`decoded=false`、`visual_ve
 
 仍需Android编码发送端，以及QNX mm-renderer/mdevpush、Screen窗口、USB角色和恢复适配。旧RTSP/TLS/RGB565/DIC1原型不迁入本路线。现有App只包含更新客户端，本目录尚未接入App的视频传输。平台参考及剩余边界见[仪表固件实现](../../docs/instrument-native.md)。
 
-熊猫材料仅用于确定互操作格式和平台契约。两个车型分别核实硬件、QNX ABI、解码库、显示器/窗口组和刷写恢复入口；静态样本中的1920×720、display ID=2不是通用的实车配置。没有合法QNX工具链与目标验证前，不标记为原生可运行，也不生成面向实车的刷机包。
+`qnx66/`新增独立C入口与构建探针，使用Clang、LLD和外部原机运行库完成ARM32编译与链接，无需官方SDK。复现方法和验证边界见[开放工具链实验](../../docs/qnx66-open-toolchain.md)。它尚未在QNX运行，不能作为完整接收服务或刷机包。
+
+熊猫材料仅用于确定互操作格式和平台契约。两个车型分别核实硬件、QNX ABI、解码库、显示器/窗口组和刷写恢复入口；静态样本中的1920×720、display ID=2不是通用的实车配置。目标平台验证前，不标记为原生可运行，也不生成面向实车的刷机包。

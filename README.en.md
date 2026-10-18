@@ -44,6 +44,7 @@ The project is in the **update-pipeline research stage**. It provides the transp
 | Android head-unit app | `app/` | Picks, pre-checks, streams, queries, applies and cleans up cluster update jobs |
 | Host lab service | `instrument/` | A Python reference implementation of the cluster-side update service, bound to `127.0.0.1` only, operating on a sandbox directory |
 | Native video core | `instrument/native/` | Independent C99 BVL1/LHF2 validation and loopback receiving, checked with real host H.264 decoding; not QNX firmware |
+| SDK-independent ARM build | `tools/qnx66_build.py` | Clang/LLD links a minimal probe and validation library against an external original runtime; QNX execution remains unverified |
 | FUP2 packaging tool | `instrument/openbyddisplay/packages.py` | Generates Ed25519 keys and builds signed, target-bound FUP2 component packages |
 | Release tooling | `tools/`, `.github/workflows/` | CI, signed-APK release pipeline and release-asset generation |
 
@@ -71,6 +72,8 @@ Signature, digest, target-model and hardware checks are intentionally kept: they
 
 The [native receiver](instrument/native/README.md) now validates and receives BVL1/LHF2 streams on the host loopback interface. Tests decode real H.264 after receipt. The [instrument implementation notes](docs/instrument-native.md) describe the platform contracts derived from user-provided reference firmware.
 
+The [SDK-independent build experiment](docs/qnx66-open-toolchain.md) produces ARM32 ELF files using Clang, LLD and an externally supplied original runtime. CPU-model tests do not execute the QNX loader or libc. Vendor runtime files and build-only library views are not distributed.
+
 **Not yet implemented here:** QNX H.264 receiving/rendering, navigation and lyrics casting, fly-screen layout, vignette mask, flashable QNX firmware, automatic OTA.
 
 ## Supported vehicles and requirements
@@ -79,7 +82,7 @@ Each target has its own profile in [`instrument/targets.json`](instrument/target
 
 | Target ID | Vehicle | Status |
 | --- | --- | --- |
-| `song-plus-dmi-2021` | 2021 BYD Song PLUS DM-i | Profile created; cluster hardware, native QNX build and on-vehicle flashing **not yet verified** |
+| `song-plus-dmi-2021` | 2021 BYD Song PLUS DM-i | Profile created; native compile/link passes; cluster hardware, QNX execution and on-vehicle flashing **not yet verified** |
 | `tang-plus-dmi-2021` | 2021 BYD Tang PLUS DM-i (name as reported by users) | Profile created; exact model and cluster part number **to be confirmed**; never cross-flash with the Song build |
 
 **Head-unit app**
