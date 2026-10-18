@@ -47,4 +47,4 @@ PYTHONPATH=instrument python3 -m unittest discover -s instrument/tests -v
 
 修改车机和仪表可能导致不可启动、显示异常、原车功能受影响、数据或财产损失，并可能影响质保或合规状态。任何支持、适配或测试结论均以明确列出的版本与实际证据为限；“可构建”“收到ACK”“已暂存”不代表车辆可安全刷写或实际出画。
 
-本项目采用 [MIT License](LICENSE)，保留原作者及贡献者版权声明，见 [NOTICE](NOTICE)。兴趣开发和测试用途描述不额外改变MIT授予的权利。无担保与责任限制在适用法律允许范围内适用；README不是零风险或绝对免责的法律保证。可参考 [MIT许可原文](https://opensource.org/license/mit)及[《中华人民共和国民法典》第506条](https://www.court.gov.cn/zixun/xiangqing/233181.html)。
+本项目采用 [MIT License](LICENSE)，保留原作者及贡献者版权声明，见 [NOTICE](NOTICE)。
