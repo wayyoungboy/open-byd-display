@@ -18,6 +18,14 @@ import android.widget.Switch
 import android.widget.Toast
 import android.os.Build
 import android.provider.Settings
+import org.json.JSONObject
+import org.openbyddisplay.cast.CaptureGrantActivity
+import org.openbyddisplay.cast.CastForegroundService
+import org.openbyddisplay.cast.CastPorts
+import org.openbyddisplay.cast.CastSessionStore
+import org.openbyddisplay.cast.CastSettings
+import org.openbyddisplay.cast.ClusterJsonClient
+import kotlin.concurrent.thread
 
 class MainActivity : Activity() {
     private val handler = Handler(Looper.getMainLooper())
@@ -39,7 +47,21 @@ class MainActivity : Activity() {
             }
         }
         findViewById<Button>(R.id.startupAdb).setOnClickListener { showAdbHelp() }
-        findViewById<EditText>(R.id.updateHost).setText(getPreferences(MODE_PRIVATE).getString("host", "192.168.77.1"))
+        val hostField = findViewById<EditText>(R.id.updateHost)
+        hostField.setText(CastSettings.host(this).ifBlank {
+            getPreferences(MODE_PRIVATE).getString("host", CastPorts.DEFAULT_HOST)
+        })
+        bindCastSwitches()
+        findViewById<Button>(R.id.castStart).setOnClickListener {
+            val host = hostField.text.toString().trim()
+            CastSettings.setHost(this, host)
+            getPreferences(MODE_PRIVATE).edit().putString("host", host).apply()
+            startActivity(CaptureGrantActivity.intent(this, host))
+        }
+        findViewById<Button>(R.id.castStop).setOnClickListener {
+            startService(CastForegroundService.stopIntent(this))
+        }
+        findViewById<Button>(R.id.castProbe).setOnClickListener { probeCast() }
         findViewById<Button>(R.id.updateGitHub).setOnClickListener {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/wayyoungboy/open-byd-display/releases")))
         }
@@ -53,9 +75,49 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun bindCastSwitches() {
+        findViewById<Switch>(R.id.castFullWidth).apply {
+            isChecked = CastSettings.fullWidth(this@MainActivity)
+            setOnCheckedChangeListener { _, v -> CastSettings.setFullWidth(this@MainActivity, v) }
+        }
+        findViewById<Switch>(R.id.castSoftEdge).apply {
+            isChecked = CastSettings.softEdgeMask(this@MainActivity)
+            setOnCheckedChangeListener { _, v -> CastSettings.setSoftEdgeMask(this@MainActivity, v) }
+        }
+        findViewById<Switch>(R.id.castLyrics).apply {
+            isChecked = CastSettings.lyricsEnabled(this@MainActivity)
+            setOnCheckedChangeListener { _, v -> CastSettings.setLyricsEnabled(this@MainActivity, v) }
+        }
+        findViewById<Switch>(R.id.castNav).apply {
+            isChecked = CastSettings.navEnabled(this@MainActivity)
+            setOnCheckedChangeListener { _, v -> CastSettings.setNavEnabled(this@MainActivity, v) }
+        }
+        findViewById<Switch>(R.id.castAutoReconnect).apply {
+            isChecked = CastSettings.autoReconnect(this@MainActivity)
+            setOnCheckedChangeListener { _, v -> CastSettings.setAutoReconnect(this@MainActivity, v) }
+        }
+    }
+
+    private fun probeCast() {
+        val host = findViewById<EditText>(R.id.updateHost).text.toString().trim()
+        CastSettings.setHost(this, host)
+        findViewById<TextView>(R.id.castStatus).text = "探测中…"
+        thread {
+            val text = runCatching {
+                val client = ClusterJsonClient(host)
+                val version = runCatching { client.version() }.getOrElse { JSONObject().put("error", it.message) }
+                val status = runCatching { client.castStatus() }.getOrElse { JSONObject().put("error", it.message) }
+                val profiles = runCatching { client.profileGet() }.getOrElse { JSONObject().put("error", it.message) }
+                "version=$version\ncast.status=$status\ncast.profile.get=$profiles"
+            }.getOrElse { "探测失败：${it.message}" }
+            handler.post { findViewById<TextView>(R.id.castStatus).text = text }
+        }
+    }
+
     private fun run(operation: String, uri: String? = null, name: String? = null) {
         val host = findViewById<EditText>(R.id.updateHost).text.toString().trim()
         getPreferences(MODE_PRIVATE).edit().putString("host", host).apply()
+        CastSettings.setHost(this, host)
         val command = Intent(this, InstrumentUpdateService::class.java).putExtra("operation", operation)
             .putExtra("host", host)
             .putExtra("uri", uri).putExtra("name", name)
@@ -77,12 +139,23 @@ class MainActivity : Activity() {
 
     private fun render() {
         val state = InstrumentUpdateStore.read(this)
+        val cast = CastSessionStore.read(this)
         val busy = InstrumentUpdateService.busy.get()
         val startupStatus = StartupController.status(this)
-        val signature = state.toString() + busy + startupStatus + findViewById<CheckBox>(R.id.updateParked).isChecked
+        val signature = state.toString() + busy + startupStatus + cast.toString() +
+            findViewById<CheckBox>(R.id.updateParked).isChecked
         if (lastRender == signature) return
         lastRender = signature
         findViewById<TextView>(R.id.startupStatus).text = startupStatus
+        findViewById<TextView>(R.id.castStatus).text = buildString {
+            append(cast.optString("message", "投屏空闲"))
+            if (cast.has("profile_id")) append("\nprofile=").append(cast.optInt("profile_id"))
+            if (cast.has("width")) append(" ").append(cast.optInt("width")).append('x').append(cast.optInt("height"))
+            if (cast.has("host")) append("\nhost=").append(cast.optString("host"))
+        }
+        val casting = cast.optBoolean("target_casting", false) || CastSessionStore.busy
+        findViewById<Button>(R.id.castStart).isEnabled = !casting
+        findViewById<Button>(R.id.castStop).isEnabled = casting
         val remote = state.optJSONObject("remote")
         findViewById<TextView>(R.id.updateStatus).text = buildString {
             append(state.optString("message", "先选择与当前仪表匹配的更新包"))

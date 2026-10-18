@@ -7,3 +7,8 @@
 研发目标为21款宋PLUS DM-i与用户提供名称的21款唐PLUS DM-i，当前尚未完成QNX原生构建与实车固件刷写。电脑实验服务只切换sandbox数据，不执行install.sh、不写车辆分区。**本Release不包含可刷仪表固件，也不声称已完成仪表投屏出画。**
 
 APK使用独立包名org.openbyddisplay，可与小灰灰共存。开发构建artifact与正式版本APK的签名不同；日常下载以本Release内APK为准。
+
+## 0.1.2
+
+- 增加自研投屏客户端（MediaProjection、BVL1/LHF2、profile 选择、遮罩/歌词/导航协议）与实验服务 cast 控制扩展。
+- 仍无商业授权字段；未提供可刷生产仪表固件，实车出画待 QNX 验证。

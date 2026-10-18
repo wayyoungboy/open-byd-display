@@ -62,6 +62,10 @@ class Laboratory:
         self.lock = threading.RLock()
         self.active: str | None = None
         self.epoch = uuid.uuid4().hex
+        self.cast_epoch = self.epoch
+        self.cast_revision = 0
+        self.cast_state = "idle"
+        self.cast_profile_id = 1
         for path in (self.root / "jobs").glob("*/state.json"):
             state = json.loads(path.read_text())
             if state["stage"] in ("receiving", "validating"):
@@ -351,6 +355,117 @@ class Laboratory:
             return self.save(state)
 
 
+    def cast_status(self) -> dict:
+        with self.lock:
+            return {
+                "ok": True,
+                "epoch": self.cast_epoch,
+                "revision": self.cast_revision,
+                "state": self.cast_state,
+                "target_casting": self.cast_state == "playing",
+                "selected_profile_id": self.cast_profile_id,
+                "heartbeat_protocol": 1,
+                "heartbeat_port": 47785,
+                "runtime": "host-lab",
+            }
+
+    def cast_profiles(self) -> dict:
+        return {
+            "ok": True,
+            "service": "cast_profiles",
+            "runtime": "host-lab",
+            "profiles": [
+                {
+                    "profile_id": 1,
+                    "theme_id": 4,
+                    "x": 0,
+                    "y": 0,
+                    "width": 1920,
+                    "height": 720,
+                    "opacity": 255,
+                    "radius": 0,
+                },
+                {
+                    "profile_id": 2,
+                    "theme_id": 4,
+                    "x": 0,
+                    "y": 0,
+                    "width": 760,
+                    "height": 720,
+                    "opacity": 255,
+                    "radius": 0,
+                },
+                {
+                    "profile_id": 3,
+                    "theme_id": 4,
+                    "x": 410,
+                    "y": 0,
+                    "width": 1100,
+                    "height": 720,
+                    "opacity": 255,
+                    "radius": 0,
+                },
+            ],
+        }
+
+    def cast_start(self, request: dict) -> dict:
+        require(isinstance(request.get("request_id"), str), "request_id_required")
+        profile = request.get("profile_id")
+        with self.lock:
+            self.cast_state = "playing"
+            self.cast_revision += 1
+            if isinstance(profile, int):
+                self.cast_profile_id = profile
+            return {
+                "ok": True,
+                "op": "cast.start",
+                "epoch": self.cast_epoch,
+                "revision": self.cast_revision,
+                "state": self.cast_state,
+                "selected_profile_id": self.cast_profile_id,
+                "runtime": "host-lab",
+            }
+
+    def cast_stop(self, request: dict) -> dict:
+        with self.lock:
+            self.cast_state = "idle"
+            self.cast_revision += 1
+            return {
+                "ok": True,
+                "op": "cast.stop",
+                "epoch": self.cast_epoch,
+                "revision": self.cast_revision,
+                "state": self.cast_state,
+                "target_casting": False,
+                "runtime": "host-lab",
+            }
+
+    def cast_switch(self, request: dict) -> dict:
+        require(isinstance(request.get("request_id"), str), "request_id_required")
+        with self.lock:
+            self.cast_revision += 1
+            return {
+                "ok": True,
+                "op": "cast.switch",
+                "epoch": self.cast_epoch,
+                "revision": self.cast_revision,
+                "state": self.cast_state,
+                "runtime": "host-lab",
+            }
+
+    def cast_heartbeat(self, request: dict) -> dict:
+        with self.lock:
+            require(self.cast_state == "playing", "cast_not_active")
+            require(request.get("epoch") == self.cast_epoch, "epoch_mismatch")
+            return {
+                "ok": True,
+                "op": "cast.heartbeat",
+                "epoch": self.cast_epoch,
+                "revision": self.cast_revision,
+                "runtime": "host-lab",
+            }
+
+
 class Handler(socketserver.StreamRequestHandler):
     def send(self, value: dict) -> None:
         self.wfile.write((json.dumps(value, separators=(",", ":")) + "\n").encode())
@@ -377,20 +492,37 @@ class Handler(socketserver.StreamRequestHandler):
                         "ok": True,
                         "release": "0.1.0",
                         "query_protocol": 2,
+                        "cast_protocol": 1,
                         "service": "openbyddisplay-lab",
                     }
                 )
             elif op == "cast.status":
-                self.send(
-                    {
-                        "ok": True,
-                        "epoch": lab.epoch,
-                        "revision": 0,
-                        "state": "idle",
-                        "target_casting": False,
-                        "runtime": "host-lab",
-                    }
-                )
+                self.send(lab.cast_status())
+            elif op == "cast.profile.get":
+                self.send(lab.cast_profiles())
+            elif op == "cast.start":
+                self.send(lab.cast_start(request))
+            elif op == "cast.stop":
+                self.send(lab.cast_stop(request))
+            elif op == "cast.switch":
+                self.send(lab.cast_switch(request))
+            elif op == "cast.heartbeat":
+                self.send(lab.cast_heartbeat(request))
+            elif op == "cast.arm":
+                self.send({"ok": True, "op": "cast.arm", "runtime": "host-lab"})
+            elif op == "cast.set":
+                self.send({"ok": True, "op": "cast.set", "runtime": "host-lab"})
+            elif op == "cast.keepalive":
+                self.send({"ok": True, "op": "cast.keepalive", "runtime": "host-lab"})
+            elif op in {
+                "music.show",
+                "music.hide",
+                "navigation.show",
+                "navigation.hide",
+                "music.config.set",
+                "navigation.config.set",
+            }:
+                self.send({"ok": True, "op": op, "runtime": "host-lab", "overlay": True})
             elif op == "update.upload":
                 lab.receive(request, self.rfile, self.send)
             elif op == "update.status":
