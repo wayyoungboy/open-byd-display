@@ -207,7 +207,7 @@ footer a{color:var(--muted)}
 <section id="features">
   <div class="wrap">
     <h2><span class="zh">功能特性</span><span class="en">Features</span>
-      <span class="sub"><span class="zh">仓库当前已实现的能力（更新链路研发阶段）</span><span class="en">Implemented in the repository today (update-pipeline research stage)</span></span>
+      <span class="sub"><span class="zh">仓库当前已实现的能力（投屏与更新链路研发阶段）</span><span class="en">Implemented in the repository today (casting and update-pipeline research stage)</span></span>
     </h2>
     <div class="grid c3">
       <div class="card">
@@ -227,8 +227,8 @@ footer a{color:var(--muted)}
         <p><span class="zh">上传与安装为两个独立、需显式确认的动作；任务状态持久化，结果不明时只查询、不自动重试。</span><span class="en">Upload and install are separate explicit actions; job state is persisted, uncertain results are only queried and never auto-resubmitted.</span></p>
       </div>
       <div class="card">
-        <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></span><span class="zh">自研投屏链路 (0.1.2)</span><span class="en">Self-developed cast link (0.1.2)</span></h3>
-        <p><span class="zh">MediaProjection → H.264 → BVL1/LHF2 发送；按屏幕面积选投屏 profile；歌词 / 导航叠加协议与实验服务。</span><span class="en">MediaProjection → H.264 → BVL1/LHF2 sender; area-based cast profile selection; lyrics / navigation overlay protocols with a lab service.</span></p>
+        <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></span><span class="zh">投屏链路（研发中）</span><span class="en">Casting link (in development)</span></h3>
+        <p><span class="zh">屏幕镜像、独立地图副屏、逐帧回执与连接恢复正在研发；以主仓库能力文档及设备验证状态为准。</span><span class="en">Mirror and independent-map sources, frame receipts and connection recovery are in development. See the main repository for capability and device-validation status.</span></p>
       </div>
       <div class="card">
         <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg></span><span class="zh">原生视频核心</span><span class="en">Native video core</span></h3>
@@ -293,8 +293,8 @@ footer a{color:var(--muted)}
       <div class="port"><b>:47787</b><span class="zh">歌词 / 音乐叠加</span><span class="en">lyrics / music overlay</span></div>
     </div>
     <p class="lead" style="margin-top:22px;font-size:.85rem">
-      <span class="zh">说明：当前仪表端更新服务由仓库内 Python 实验服务（仅监听 127.0.0.1、沙箱目录）模拟；原生 QNX 服务尚未实现。端口与协议常量取自仓库 <code>headunit/app/.../cast/CastPorts.kt</code>。</span>
-      <span class="en">Note: today the cluster-side update service is simulated by the repository's Python lab service (127.0.0.1, sandbox only); the native QNX service is not yet implemented. Port and protocol constants come from <code>headunit/app/.../cast/CastPorts.kt</code>.</span>
+      <span class="zh">说明：当前更新控制面是仅监听 127.0.0.1、操作沙箱的 Python 实验服务；原生视频接收已可编译但未通过 QNX 验收。图中控制与 HMI 端口代表研发目标，不表示原生后端已可用。历史协议常量见仓库 <code>headunit/app/.../cast/CastPorts.kt</code>。</span>
+      <span class="en">Note: the update control plane is a loopback-only Python sandbox. Native video programs compile but remain unverified on QNX; control/HMI ports in the diagram are development targets, not available native backends. Historical protocol constants are in <code>headunit/app/.../cast/CastPorts.kt</code>.</span>
     </p>
   </div>
 </section>
@@ -375,8 +375,8 @@ PYTHONPATH=firmware python3 -m unittest discover \
     <div class="road">
       <div class="item done"><span class="mark">✓</span><div><b><span class="zh">更新链路：预检、流式上传、安装事务</span><span class="en">Update pipeline: pre-check, streaming upload, install transaction</span></b><p><span class="zh">Android 客户端与 Python 实验服务已实现并通过测试。</span><span class="en">Implemented in the Android client and Python lab service, with passing tests.</span></p></div></div>
       <div class="item done"><span class="mark">✓</span><div><b><span class="zh">原生视频核心与无 SDK ARM32 构建</span><span class="en">Native video core & SDK-independent ARM32 build</span></b><p><span class="zh">C99 BVL1/LHF2 接收、真实 H.264 解码；Clang/LLD 链接生成 ARM32 ELF。</span><span class="en">C99 BVL1/LHF2 receive with real H.264 decode; Clang/LLD produces ARM32 ELF.</span></p></div></div>
-      <div class="item done"><span class="mark">✓</span><div><b><span class="zh">自研投屏客户端 (0.1.2)</span><span class="en">Self-developed cast client (0.1.2)</span></b><p><span class="zh">MediaProjection → H.264 → BVL1/LHF2；profile 面积选择；歌词 / 导航叠加协议。</span><span class="en">MediaProjection → H.264 → BVL1/LHF2; area-based profile selection; lyrics / navigation overlay protocols.</span></p></div></div>
-      <div class="item wip"><span class="mark">…</span><div><b><span class="zh">仪表端原生接收 / 上屏程序（需 QNX 6.x 工具链）</span><span class="en">Cluster-side native receive / rendering (needs a QNX 6.x toolchain)</span></b><p><span class="zh">自研 QNX 播放器、投屏出画、USB 角色切换回读、Kanzi 叠层，均需 SDP 6.x ARMv7 工具链，当前未刷机验证。</span><span class="en">A self-developed QNX player, on-screen cast, USB role-switch readback and Kanzi overlays all require an SDP 6.x ARMv7 toolchain; not yet verified on a cluster.</span></p></div></div>
+      <div class="item done"><span class="mark">✓</span><div><b><span class="zh">投屏客户端（研发中）</span><span class="en">Casting client (in development)</span></b><p><span class="zh">车机镜像与独立地图来源、持续视频协议及数据合成，设备验收尚未完成。</span><span class="en">Mirror/map sources, continuous video protocol and composition; device acceptance remains incomplete.</span></p></div></div>
+      <div class="item wip"><span class="mark">…</span><div><b><span class="zh">仪表端原生接收 / 上屏程序（需目标 QNX 运行与接口验证）</span><span class="en">Cluster-side native receive / rendering (needs target QNX runtime and interface validation)</span></b><p><span class="zh">自研 QNX 播放器、投屏出画、USB 角色切换回读、Kanzi 叠层，已有 Clang/LLD 无 SDK 的 ARM32 构建；USB、HMI 与真实 QNX 运行仍需验证。</span><span class="en">A self-developed QNX player, on-screen cast, USB role-switch readback and Kanzi overlays have SDK-independent ARM32 builds; USB, HMI and actual QNX execution remain unverified.</span></p></div></div>
       <div class="item wip"><span class="mark">…</span><div><b><span class="zh">可刷 QNX 仪表固件与整车恢复</span><span class="en">Flashable QNX firmware & full-vehicle recovery</span></b><p><span class="zh">需实际 QNX 加载、解码 / 窗口验证、原生安装 / 恢复集成及分车型实车测试。</span><span class="en">Requires actual QNX loading, decoder/window validation, native install/recovery integration and per-model vehicle testing.</span></p></div></div>
       <div class="item wip"><span class="mark">…</span><div><b><span class="zh">USB Host/NCM 切换、页面锁、主题编辑器</span><span class="en">USB Host/NCM switching, page lock, theme editor</span></b><p><span class="zh">需要车机特权或改动仪表原生 HMI，暂未实现（详见 <code>docs/cast-capability-gap.md</code>）。</span><span class="en">Needs system privileges or changes to the cluster's native HMI; not yet implemented (see <code>docs/cast-capability-gap.md</code>).</span></p></div></div>
     </div>
@@ -399,11 +399,7 @@ PYTHONPATH=firmware python3 -m unittest discover \
 <section id="thanks" class="thanks">
   <div class="wrap">
     <h2><span class="zh">致谢</span><span class="en">Acknowledgements</span></h2>
-    <p><span class="zh">感谢分享问题、适配结果，以及维护 Kotlin、AndroidX、Gradle 和 <code>cryptography</code> 的贡献者。特别感谢以下给予帮助与支持：</span><span class="en">Thanks to everyone who reports issues and shares vehicle adaptation results, and to the Kotlin, AndroidX, Gradle and <code>cryptography</code> projects. Special thanks for their help and support to:</span></p>
-    <div class="names">
-      <span class="n">迪加</span>
-      <span class="n">远方的小熊猫智能守卫</span>
-    </div>
+    <p><span class="zh">感谢分享问题、适配结果，以及维护 Kotlin、AndroidX、Gradle 和 <code>cryptography</code> 的贡献者。</span><span class="en">Thanks to everyone who reports issues and shares vehicle adaptation results, and to the Kotlin, AndroidX, Gradle and <code>cryptography</code> projects.</span></p>
   </div>
 </section>
 
