@@ -7,16 +7,24 @@ void obd_media_unload(void *libraries[4]) {
     for (int i=3;i>=0;i--) if(libraries[i]) { dlclose(libraries[i]); libraries[i]=0; }
 }
 int obd_media_load(obd_media_api *a, void *libraries[4]) {
+    obd_media_load_error error;
+    return obd_media_load_diagnostic(a,libraries,&error);
+}
+int obd_media_load_diagnostic(obd_media_api *a, void *libraries[4], obd_media_load_error *error) {
+    if(error) { error->library=-1; error->symbol=0; error->cleanup_failed=0; }
     if (!a || !libraries) return -1;
     memset(a,0,sizeof(*a)); memset(libraries,0,4*sizeof(void *));
     const char *paths[4]={"/base/usr/lib/libscreen.so.1","/base/usr/lib/libmmrndclient.so.1","/base/usr/lib/libstrm.so.1",0};
-    for(int i=0;i<4;i++) { libraries[i]=dlopen(paths[i],2); if(!libraries[i]) goto fail; }
+    for(int i=0;i<4;i++) {
+        libraries[i]=dlopen(paths[i],2);
+        if(!libraries[i]) { if(error) error->library=i; goto fail; }
+    }
 /* POSIX dlsym representation; compile-time checked, without incompatible casts. */
 #define LOAD(lib,field) do { \
     void *symbol=dlsym(libraries[lib],#field); \
     typedef char same_size[(sizeof(a->field)==sizeof(symbol))?1:-1]; \
     (void)sizeof(same_size); \
-    if(!symbol) goto fail; \
+    if(!symbol) { if(error) { error->library=lib; error->symbol=#field; } goto fail; } \
     memcpy(&a->field,&symbol,sizeof(symbol)); \
 } while(0)
     LOAD(0,screen_create_context);
@@ -65,5 +73,9 @@ int obd_media_load(obd_media_api *a, void *libraries[4]) {
 #undef LOAD
     return 0;
 fail:
-    obd_media_unload(libraries); memset(a,0,sizeof(*a)); return -1;
+    for(int i=3;i>=0;i--) if(libraries[i]) {
+        if(dlclose(libraries[i]) && error) error->cleanup_failed=1;
+        libraries[i]=0;
+    }
+    memset(a,0,sizeof(*a)); return -1;
 }

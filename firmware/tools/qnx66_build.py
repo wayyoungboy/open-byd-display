@@ -145,6 +145,13 @@ def build(libc, expected_digest, output, target, clang, lld):
         view = intermediate / "libc.so.3"
         view.write_bytes(link_view(original))
         native = ROOT / "native"
+        source_paths = sorted(
+            [path for directory in (native / "core", native / "qnx66")
+             for path in directory.rglob("*") if path.suffix in {".c", ".h", ".S"}]
+            + [Path(__file__).resolve(), ROOT / "tools/qnx66_elf.py"]
+        )
+        source_hashes = {path.relative_to(ROOT).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+                         for path in source_paths}
         flags = [
             clang,
             "--target=armv7-none-eabi",
@@ -170,6 +177,7 @@ def build(libc, expected_digest, output, target, clang, lld):
         objects = {}
         for name, source in {
             "core": native / "core/lhf2.c",
+            "trial": native / "core/trial.c",
             "entry": native / "qnx66/start.S",
             "startup": native / "qnx66/start.c",
             "probe": native / "qnx66/probe.c",
@@ -180,6 +188,8 @@ def build(libc, expected_digest, output, target, clang, lld):
             "network": native / "qnx66/network.c",
             "io": native / "qnx66/io.c",
             "stream": native / "qnx66/stream.c",
+            "inspect": native / "qnx66/inspect.c",
+            "inspect_main": native / "qnx66/inspect_main.c",
         }.items():
             obj = intermediate / f"{name}.o"
             extra = [] if source.suffix == ".S" else ["-std=c99", "-pedantic"]
@@ -215,7 +225,7 @@ def build(libc, expected_digest, output, target, clang, lld):
         library = stage / library_name
         version_map = intermediate / "exports.map"
         version_map.write_text(
-            "{ global: obd_crc32; obd_lhf2_*; obd_media_*; obd_stream_*; local: *; };\n"
+            "{ global: obd_crc32; obd_lhf2_*; obd_media_*; obd_stream_*; obd_trial_*; obd_platform_inspect; local: *; };\n"
         )
         command(
             link_flags
@@ -230,6 +240,8 @@ def build(libc, expected_digest, output, target, clang, lld):
                 objects["network"],
                 objects["io"],
                 objects["stream"],
+                objects["trial"],
+                objects["inspect"],
                 str(view),
                 "-o",
                 str(library),
@@ -290,9 +302,23 @@ def build(libc, expected_digest, output, target, clang, lld):
         )
         player.write_bytes(player_data)
         player.chmod(0o755)
+        inspect_name = f"obd-qnx66-inspect-{target}.elf"
+        inspector = stage / inspect_name
+        command(link_flags + [
+            "-e", "_start", "--image-base=0x08048000",
+            "--dynamic-linker=/usr/lib/ldqnx.so.2",
+            objects["entry"], objects["startup"], objects["inspect_main"],
+            objects["inspect"], objects["media_load"], objects["aeabi"],
+            str(view), "-o", str(inspector),
+        ])
+        inspect_data = bytearray(inspector.read_bytes())
+        struct.pack_into("<I", inspect_data, 36, struct.unpack_from("<I", inspect_data, 36)[0] | 2)
+        inspector.write_bytes(inspect_data)
+        inspector.chmod(0o755)
         report = {
             "format": 1,
             "target": target,
+            "source_files_sha256": source_hashes,
             "runtime_libc_sha256": expected_digest,
             "compiler": compiler_version,
             "linker": linker_version,
@@ -300,6 +326,7 @@ def build(libc, expected_digest, output, target, clang, lld):
                 probe_name: inspect(bytes(probe_data), exports, "probe"),
                 library_name: inspect(library.read_bytes(), exports, "library"),
                 player_name: inspect(bytes(player_data), exports, "probe"),
+                inspect_name: inspect(bytes(inspect_data), exports, "probe"),
             },
             "sdk_used": False,
             "vendor_crt_copied": False,
@@ -316,6 +343,9 @@ def build(libc, expected_digest, output, target, clang, lld):
             final_input = stream.read(MAX_ELF + 1)
         if hashlib.sha256(final_input).hexdigest() != expected_digest:
             raise ValueError("Runtime input changed during build")
+        if any(hashlib.sha256(path.read_bytes()).hexdigest() != source_hashes[path.relative_to(ROOT).as_posix()]
+               for path in source_paths):
+            raise ValueError("Native source changed during build")
         if os.path.lexists(output):
             raise ValueError("Output appeared during build; refusing replacement")
         os.rename(stage, output)

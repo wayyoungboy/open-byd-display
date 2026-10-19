@@ -108,7 +108,7 @@ static int receive_stream(int fd, const char *path, int64_t deadline) {
     uint64_t bytes = 0;
     const char *termination = "eof";
     int result = !payload || reply(fd,
-        "{\"ok\":true,\"ready\":true,\"protocol\":\"LHF2\",\"backend\":\"host-file\",\"decoded\":false,\"visual_verified\":false}\n", deadline);
+        "{\"ok\":true,\"ready\":true,\"service\":\"openbyddisplay.video\",\"wire_version\":1,\"protocol\":\"LHF2\",\"backend\":\"host-file\",\"decoded\":false,\"visual_verified\":false}\n", deadline);
     while (!result) {
         uint8_t header[OBD_LHF2_HEADER_SIZE];
         int read_result = read_exact(fd, header, sizeof(header), deadline);

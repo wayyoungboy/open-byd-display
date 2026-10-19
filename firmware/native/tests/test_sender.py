@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools"))
 from send_video import send_video  # noqa: E402
 
 FRAME = b"\0\0\0\1\x09\xf0\0\0\0\1\x67\x01\0\0\0\1\x68\x01\0\0\0\1\x65\x01"
+READY = {"ok": True, "ready": True, "protocol": "LHF2", "service": "openbyddisplay.video", "wire_version": 1}
 
 
 class Connection:
@@ -47,7 +48,7 @@ class SenderTests(unittest.TestCase):
         replies = b"".join(
             json.dumps(value).encode() + b"\n"
             for value in (
-                {"ok": True, "ready": True, "protocol": "LHF2"},
+                READY,
                 {"ok": True, "accepted_sequence": 0, "ack": 0},
                 {"ok": True, "done": True, "cleanup": True},
             )
@@ -63,7 +64,7 @@ class SenderTests(unittest.TestCase):
         )
 
     def test_wrong_or_missing_receipts_are_failures(self):
-        ready = b'{"ok":true,"ready":true,"protocol":"LHF2"}\n'
+        ready = json.dumps(READY).encode() + b"\n"
         ack = b'{"ok":true,"accepted_sequence":0}\n'
         invalid = (
             b'{"ok":true,"ready":false}\n',
@@ -105,6 +106,14 @@ class SenderTests(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         send_video(*args)
             connect.assert_not_called()
+
+    def test_foreign_identity_never_receives_video(self):
+        for field, value in (("service", "other"), ("service", None), ("wire_version", True), ("wire_version", 2)):
+            connection = Connection(json.dumps(dict(READY, **{field: value})).encode() + b"\n")
+            with patch("send_video.socket.create_connection", return_value=connection):
+                with self.assertRaises(ValueError):
+                    send_video("127.0.0.1", 47782, FRAME, 64, 32, 5)
+            self.assertEqual(39, len(connection.outgoing))  # Greeting only, no video payload.
 
 
 if __name__ == "__main__":

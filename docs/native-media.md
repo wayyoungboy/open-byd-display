@@ -16,6 +16,8 @@
 
 ## 产物与后续仪表测试
 
+新增 `obd-qnx66-inspect-<target>.elf --platform`，最小探针通过后读取库/符号、Screen 显示列表和 mmr 连接状态，不创建窗口或播放。加载失败报告库编号/符号；播放器初始化拒绝报告 `media_stage` 和 `cleanup_confirmed`。顺序见[首次接机](preflight.md)，显示 ID 和连接成功不代表解码/目视出画。
+
 构建器新增`obd-qnx66-player-<target>.elf`，动态库也包含媒体适配接口。原始libc的memcpy/memset为IFUNC；本程序使用自主实现且隐藏的字节拷贝/清零及必要AEABI适配，避免额外假设加载器对该导入的处理。运行库本身未修改。
 
 **以下为接仪表核实硬件、libc摘要及最小探针运行成功后使用的手动开发命令，不是刷机步骤。** 所有数字先用实测配置替换；单次测试后进程退出。

@@ -67,6 +67,7 @@
 
 | 你想做什么 | 入口 |
 | --- | --- |
+| 准备首次接机、只读报告和分阶段测试 | [上车前准备与操作顺序](docs/preflight.md) |
 | 查看投屏能力、协议及待办 | [车机投屏](docs/casting.md) |
 | 核对迁移、发布和实车完成状态 | [功能清单与验收门槛](docs/feature-migration.md) |
 | 调试氛围灯、反馈与恢复 | [氛围灯实现](docs/ambient-light.md) / [车机车辆接口](docs/vehicle-interfaces.md) |

@@ -76,7 +76,9 @@ int obd_media_close(obd_media *m) {
 int obd_media_open(obd_media *m, const obd_media_api *a, const obd_media_config *c) {
     if (!m || !a) return -1;
     memset(m,0,sizeof(*m)); m->api=*a; m->output=m->channel=-1;
+    m->diagnostic_stage="configuration";
     if (!valid(c)) return -1;
+    m->diagnostic_stage="required_symbols";
 #define NEED(field) if (!a->field) return -1
     NEED(screen_create_context); NEED(screen_destroy_context);
     NEED(screen_get_context_property_iv); NEED(screen_get_context_property_pv);
@@ -100,16 +102,20 @@ int obd_media_open(obd_media *m, const obd_media_api *a, const obd_media_config 
     snprintf(m->group,sizeof(m->group),"OBD_G_%s",c->session_id);
     snprintf(m->video,sizeof(m->video),"OBD_V_%s",c->session_id);
     snprintf(m->channel_name,sizeof(m->channel_name),"obd_stream_%s",c->session_id);
+    m->diagnostic_stage="screen_context";
     if (a->screen_create_context(&m->screen,0)) goto fail;
     int count=0,size[2],id; void *displays[8],*display=0;
+    m->diagnostic_stage="display_list";
     if (a->screen_get_context_property_iv(m->screen,DISPLAY_COUNT,&count) || count<1 || count>8 ||
         a->screen_get_context_property_pv(m->screen,DISPLAYS,displays)) goto fail;
+    m->diagnostic_stage="display_identity";
     for (int i=0;i<count;i++) {
         if (a->screen_get_display_property_iv(displays[i],ID,&id)) goto fail;
         if (id==c->display_id) { if(display) goto fail; display=displays[i]; }
     }
     if (!display || a->screen_get_display_property_iv(display,SIZE,size) ||
         size[0]!=c->physical_width || size[1]!=c->physical_height) goto fail;
+    m->diagnostic_stage="window_create";
     if (a->screen_create_window_type(&m->parent,m->screen,0) ||
         a->screen_create_event(&m->event) || set(m,m->parent,VISIBLE,0,0) ||
         a->screen_set_window_property_pv(m->parent,DISPLAY,&display) ||
@@ -120,35 +126,45 @@ int obd_media_open(obd_media *m, const obd_media_api *a, const obd_media_config 
         set(m,m->parent,SENSITIVITY,2,0) || set(m,m->parent,ALPHA,255,0) ||
         set(m,m->parent,ZORDER,c->zorder,0) || a->screen_create_window_buffers(m->parent,1)) goto fail;
     void *buffer=0,*pixels=0; int stride=0,buffer_size[2];
+    m->diagnostic_stage="window_buffer";
     if (a->screen_get_window_property_pv(m->parent,BUFFERS,&buffer) || !buffer ||
         a->screen_get_buffer_property_iv(buffer,STRIDE,&stride) ||
         a->screen_get_buffer_property_iv(buffer,BUFFER_SIZE,buffer_size) ||
         buffer_size[0]!=size[0] || buffer_size[1]!=size[1] || stride<size[0]*4 || stride>16384 ||
         a->screen_get_buffer_property_pv(buffer,POINTER,&pixels) || !pixels) goto fail;
     memset(pixels,0,(size_t)stride*(unsigned)size[1]);
+    m->diagnostic_stage="parent_post";
     if (a->screen_post_window(m->parent,buffer,0,0,0)) goto fail;
+    m->diagnostic_stage="renderer_connect";
     m->connection=a->mmr_connect(0);
     if (!m->connection) goto fail;
+    m->diagnostic_stage="renderer_context";
     m->renderer=a->mmr_context_create(m->connection,m->channel_name,0,0600);
     if (!m->renderer || parameter(m,0,"prefetch_mode","-1","mmf.SCREEN_WRITER_DISABLE_BACKGROUND","1")) goto fail;
     char url[384];
     int n=snprintf(url,sizeof(url),"screen:/any?wingrp=%s&winembed=1&winid=%s&nodstviewport=1&initflags=invisible",m->group,m->video);
     if (n<0 || (size_t)n>=sizeof(url)) goto fail;
+    m->diagnostic_stage="renderer_output";
     m->output=a->mmr_output_attach(m->renderer,url,"video");
     if (m->output<0 || parameter(m,1,"mmf.SCREEN_WRITER_DISABLE_MEDIACLOCK","1","mmf.SCREEN_WRITER_POST_BUFFER_NOSYNC","1") ||
         parameter(m,2,"VideoDecoderLowLatencyMode","1","ColorSpaceMode","0")) goto fail;
+    m->diagnostic_stage="renderer_input";
     n=snprintf(url,sizeof(url),"mdevpush:/dev/name/local/%s?fourcc=H264&video.frame_rate=%u&video.depth=24&video.width=%u&video.height=%u&queue_capacity=2",m->channel_name,c->fps,c->encoded_width,c->encoded_height);
     if (n<0 || (size_t)n>=sizeof(url) || a->mmr_input_attach(m->renderer,url,"track")) goto fail;
     m->attached=1;
+    m->diagnostic_stage="renderer_play";
     if (a->mmr_play(m->renderer)) goto fail;
     m->playing=1;
     uint64_t timeout=UINT64_C(300000000);
+    m->diagnostic_stage="mdevpush_connect";
     if (a->TimerTimeout(2,0x50,0,&timeout,0)<0) goto fail;
     m->channel=a->name_open(m->channel_name,0);
     if (a->TimerTimeout(2,0x50,0,0,0)<0 || m->channel<0) goto fail;
     uint32_t format[8]={0,UINT32_C(0x48323634),c->encoded_width,c->encoded_height,24,c->fps,0,0};
+    m->diagnostic_stage="mdevpush_format";
     if (send_message(m,2,format,sizeof(format))) goto fail;
     m->ready=1;
+    m->diagnostic_stage="ready";
     return 0;
 fail:
     m->failed=1; obd_media_close(m); return -1;

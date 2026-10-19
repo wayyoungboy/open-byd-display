@@ -47,7 +47,12 @@ int obd_stream_run(obd_media *m,const obd_media_api *api,const obd_media_config 
     if(transfer(&s,greeting+4,sizeof(greeting)-4,0) || memcmp(greeting,"BVL1\0\0\0\17{\"op\":\"stream\"}",23) || be32(greeting+35)) return 65;
     obd_media_config config=*base;
     config.encoded_width=be32(greeting+23); config.encoded_height=be32(greeting+27); config.fps=be32(greeting+31);
-    if(obd_media_open(m,api,&config)) return m->failed==2 ? 75 : 70;
+    if(obd_media_open(m,api,&config)) {
+        char line[256];
+        int n=snprintf(line,sizeof(line),"{\"ok\":false,\"error\":\"media_open\",\"media_stage\":\"%s\",\"cleanup_confirmed\":%s,\"visual_verified\":false}\n",m->diagnostic_stage?m->diagnostic_stage:"unknown",m->failed==2?"false":"true");
+        if(n>0 && (size_t)n<sizeof(line)) (void)transfer(&s,line,(unsigned)n,1);
+        return m->failed==2 ? 75 : 70;
+    }
     uint8_t *payload=malloc(OBD_LHF2_MAX_PAYLOAD);
     int result=74,ended=0;
     error="ready";
