@@ -105,6 +105,27 @@ def framed_sample(raw):
     return bytes(result)
 
 
+def frame_hashes(text):
+    rows = [line.split(",") for line in text.splitlines() if line and not line.startswith("#")]
+    if len(rows) != 10 or any(len(row) != 6 or not re.fullmatch(r"[0-9a-f]{32}", row[-1].strip()) for row in rows):
+        raise ValueError("sample_requires_ten_decoded_frames")
+    return [row[-1].strip() for row in rows]
+
+
+def create_sample(samples, ffmpeg="ffmpeg"):
+    samples.mkdir()
+    subprocess.run([ffmpeg, "-v", "error", "-f", "lavfi", "-i", "testsrc2=size=64x48:rate=5",
+                    "-frames:v", "10", "-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency",
+                    "-profile:v", "baseline", "-pix_fmt", "yuv420p", "-g", "5", "-bf", "0",
+                    "-x264-params", "aud=1:repeat-headers=1", "-f", "h264",
+                    str(samples / "test-64x48-5fps-10frames.h264")], check=True, timeout=30)
+    raw = (samples / "test-64x48-5fps-10frames.h264").read_bytes()
+    (samples / "test-64x48-5fps-10frames.bvl1").write_bytes(framed_sample(raw))
+    subprocess.run([ffmpeg, "-v", "error", "-i", str(samples / "test-64x48-5fps-10frames.h264"),
+                    "-vsync", "0", "-f", "framemd5", str(samples / "reference.framemd5")], check=True, timeout=30)
+    frame_hashes((samples / "reference.framemd5").read_text())
+
+
 def make(output, apk, apk_digest, builds, build_tools, certificate, ffmpeg="ffmpeg"):
     apk_data = bounded_bytes(apk, 64 * 1024 * 1024)
     if not re.fullmatch(r"[0-9a-f]{64}", apk_digest) or hashlib.sha256(apk_data).hexdigest() != apk_digest:
@@ -145,15 +166,7 @@ def make(output, apk, apk_digest, builds, build_tools, certificate, ffmpeg="ffmp
     subprocess.run(["git", "archive", "--format=zip", "--prefix=OpenBYDDisplay-source/",
                     "--output=" + str((output / "OpenBYDDisplay-source.zip").resolve()), source], cwd=REPO, check=True, timeout=60)
     samples = output / "samples"
-    samples.mkdir()
-    subprocess.run([ffmpeg, "-v", "error", "-f", "lavfi", "-i", "testsrc2=size=64x48:rate=5",
-                    "-frames:v", "10", "-c:v", "libx264", "-profile:v", "baseline", "-pix_fmt", "yuv420p",
-                    "-g", "5", "-bf", "0", "-x264-params", "aud=1:repeat-headers=1", "-f", "h264",
-                    str(samples / "test-64x48-5fps-10frames.h264")], check=True, timeout=30)
-    raw = (samples / "test-64x48-5fps-10frames.h264").read_bytes()
-    (samples / "test-64x48-5fps-10frames.bvl1").write_bytes(framed_sample(raw))
-    subprocess.run([ffmpeg, "-v", "error", "-i", str(samples / "test-64x48-5fps-10frames.h264"),
-                    "-f", "framemd5", str(samples / "reference.framemd5")], check=True, timeout=30)
+    create_sample(samples, ffmpeg)
     rows = [{"path": p.relative_to(output).as_posix(), "bytes": p.stat().st_size, "sha256": sha256(p)}
             for p in sorted(output.rglob("*")) if p.is_file()]
     manifest = {"format": 1, "source_commit": source, "targets": list(TARGETS),

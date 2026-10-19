@@ -109,6 +109,13 @@ class KitTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             kit.framed_sample(raw[:-14])
 
+    def test_reference_must_contain_ten_decoded_frames(self):
+        row = "0, 0, 0, 1, 4608, " + "a" * 32 + "\n"
+        self.assertEqual(["a" * 32] * 10, kit.frame_hashes("#header\n" + row * 10))
+        for count in (0, 9, 11):
+            with self.assertRaisesRegex(ValueError, "ten_decoded_frames"):
+                kit.frame_hashes(row * count)
+
 
 if __name__ == "__main__":
     unittest.main()
