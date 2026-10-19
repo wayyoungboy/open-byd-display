@@ -76,6 +76,7 @@
 | 了解自研仪表固件与原生视频进度 | [固件实现](docs/instrument-native.md) / [原生核心](firmware/native/README.md) |
 | 不使用官方SDK编译原生程序 | [Clang/LLD构建实验](docs/qnx66-open-toolchain.md) |
 | 查看解码显示及增量安装 | [原生媒体](docs/native-media.md) / [增量事务](docs/incremental-install.md) |
+| 查看原生安装、启动管理和分车型台架镜像 | [原生安装与启动](docs/native-install-boot.md) |
 | 研究上传、查询及安装协议 | [更新协议](docs/update-protocol.md) |
 | 了解签名、构建与版本分发 | [GitHub开发与分发](docs/github-distribution.md) |
 | 查看构建或提交适配问题 | [Actions](https://github.com/wayyoungboy/open-byd-display/actions) / [Issues](https://github.com/wayyoungboy/open-byd-display/issues) |

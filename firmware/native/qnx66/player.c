@@ -2,6 +2,9 @@
 #include "network.h"
 #include "io.h"
 #include "baseline_platform.h"
+#ifdef OBD_WITH_SUPERVISION
+#include "guard.h"
+#endif
 #include <string.h>
 extern int getpid(void);
 extern int dup2(int,int);
@@ -49,7 +52,7 @@ static int play(int argc,char **argv,int continuous) {
     obd_media_unload(libraries);
     return result;
 }
-int main(int argc,char **argv) {
+static int player_main(int argc,char **argv) {
     if(signal(2,stop)==(void (*)(int))-1 || signal(15,stop)==(void (*)(int))-1 ||
         signal(13,stop)==(void (*)(int))-1) return 71;
     if(argc==2 && !strcmp(argv[1],"--identity")) return obd_baseline_identity();
@@ -90,4 +93,20 @@ int main(int argc,char **argv) {
         return stopped?0:result;
     }
     return play(argc,argv,0);
+}
+int main(int argc,char **argv) {
+#ifdef OBD_WITH_SUPERVISION
+    int supervised=0;
+    if(argc==16 && !strcmp(argv[1],"--baseline-serve") && !strcmp(argv[13],"--supervised")) {
+        int lease,health;
+        if(number(argv[14],&lease) || number(argv[15],&health) || lease>1023 || health>1023 ||
+           obd_guard_start(lease,health)) return 64;
+        obd_io_watch(obd_guard_tick); obd_stream_observer(obd_guard_media); supervised=1; argc=13;
+    }
+#endif
+    int result=player_main(argc,argv);
+#ifdef OBD_WITH_SUPERVISION
+    if(supervised) { obd_stream_observer(0); obd_io_watch(0); obd_guard_stop(); }
+#endif
+    return result;
 }

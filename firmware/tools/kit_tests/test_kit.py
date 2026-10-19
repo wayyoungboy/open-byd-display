@@ -35,6 +35,7 @@ class KitTests(unittest.TestCase):
 
     def fixture(self, repo, build, target):
         sources = {"native/core/test.c": b"example", "tools/qnx66_build.py": b"build", "tools/qnx66_elf.py": b"elf", "baselines.json": b"profiles"}
+        sources |= {"native/vendor/monocypher/LICENCE.md": b"synthetic license", "native/vendor/monocypher/upstream.json": b"synthetic provenance"}
         for name, data in sources.items():
             path = repo / "firmware" / name
             path.parent.mkdir(parents=True, exist_ok=True)

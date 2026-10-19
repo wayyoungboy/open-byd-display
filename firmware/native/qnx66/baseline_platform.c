@@ -11,6 +11,8 @@ static int report(int fd,const char *event,unsigned index) {
     return n<=0 || (size_t)n>=sizeof(line) || write(fd,line,(unsigned)n)!=n ? -1 : 0;
 }
 int obd_baseline_identity(void) { return report(1,"compiled_baseline",0)?74:0; }
+const char *obd_baseline_target(void) { return OBD_TARGET_ID; }
+const char *obd_baseline_zip(void) { return OBD_BASE_ZIP_SHA256; }
 int obd_baseline_platform_check(const volatile int *cancel) {
     obd_readonly_file file={-1,0,{0}};
     const obd_baseline_io io={&file,obd_readonly_open,obd_readonly_read,obd_readonly_close}; unsigned index=0;

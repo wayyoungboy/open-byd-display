@@ -1,5 +1,7 @@
 # 更新协议与实现边界
 
+新增的原生 `.obg` 代际走本地 C 安装器，与本文 FUP2/ZIP 实验传输分开；当前 App 尚无该原生上传后端，不能直接提交 `.obg`。见[原生安装与启动](native-install-boot.md)。
+
 传输为 USB NCM 网络上的 TCP JSON 行（默认47785）；现有帧协议保留 `update.info/upload/status/apply/cancel`，本项目自研端不接收或要求商业 Token/client_time。电脑实验服务只绑定127.0.0.1，不能作为实车QNX服务使用。
 
 先读 `update.info`，确认 update_protocol=2、receive_available、对应 apply_available 和组件公钥状态。实验服务只允许components安装，firmware_apply_available固定false。`cast.status`在实验端只报告idle或waiting_video模型状态，不实现投屏接收或渲染。模型校验epoch/revision和请求去重；没有视频时不会报告playing，独立overlay操作返回不可用。

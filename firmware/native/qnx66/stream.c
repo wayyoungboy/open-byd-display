@@ -4,6 +4,8 @@
 extern void *malloc(size_t);
 extern void free(void *);
 extern int snprintf(char *,size_t,const char *,...);
+static void (*media_observer)(const obd_media *);
+void obd_stream_observer(void (*observe)(const obd_media *)) { media_observer=observe; }
 typedef struct { obd_io io; int input,output,continuous; const obd_media_config *bounds; } session;
 static int transfer(session *s,void *data,unsigned bytes,int writing) {
     if(s->continuous) {
@@ -61,6 +63,7 @@ int obd_stream_run(obd_media *m,const obd_media_api *api,const obd_media_config 
         uint8_t header[24]; obd_lhf2_frame frame;
         error="window_event";
         if(obd_media_events(m)) goto done;
+        if(media_observer) media_observer(m);
         error="header";
         if(transfer(&s,header,4,0)) goto done;
         if(!memcmp(header,"PING",4)) {
@@ -92,6 +95,7 @@ int obd_stream_run(obd_media *m,const obd_media_api *api,const obd_media_config 
         if(obd_media_submit(m,&frame,payload,frame.bytes)) goto done;
         error="window_event";
         if(obd_media_events(m)) goto done;
+        if(media_observer) media_observer(m);
         error="frame_receipt";
         if(message(&s,"decoder_submitted",m->submitted,m->posts,m->readback,0,m->sequence.sequence)) goto done;
     }
@@ -109,6 +113,7 @@ done:;
     unsigned submitted=m->submitted,posts=m->posts;
     int readback=m->readback;
     if(obd_media_close(m)) { result=75; error="cleanup"; }
+    if(media_observer) media_observer(0);
     if(!result && message(&s,"done",submitted,posts,readback,1,0)) { result=74; error="completion_receipt"; }
     if(result && !(cancel && *cancel)) {
         char line[256];

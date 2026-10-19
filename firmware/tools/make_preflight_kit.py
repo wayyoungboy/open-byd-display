@@ -64,9 +64,11 @@ def build_files(directory, target, source=None):
         raise ValueError("build_artifact_allowlist_mismatch")
     hashes = report.get("source_files_sha256")
     expected_sources = {p.relative_to(REPO / "firmware").as_posix()
-                        for directory_ in (REPO / "firmware/native/core", REPO / "firmware/native/qnx66")
+                        for directory_ in (REPO / "firmware/native/core", REPO / "firmware/native/qnx66",
+                                           REPO / "firmware/native/vendor/monocypher")
                         for p in directory_.rglob("*") if p.suffix in {".c", ".h", ".S"}}
     expected_sources |= {"tools/qnx66_build.py", "tools/qnx66_elf.py", "baselines.json"}
+    expected_sources |= {"native/vendor/monocypher/LICENCE.md", "native/vendor/monocypher/upstream.json"}
     if not isinstance(hashes, dict) or set(hashes) != expected_sources:
         raise ValueError("build_source_coverage_mismatch")
     for name, digest in hashes.items():

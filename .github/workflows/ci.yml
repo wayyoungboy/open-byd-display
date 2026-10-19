@@ -17,6 +17,7 @@ jobs:
       - name: Install open ARM build tools
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends clang lld
       - run: python -m pip install -r firmware/tools/qnx66-requirements.txt
+      - run: python -m pip install -r firmware/requirements.txt
       - name: Cross-link and check compiled ARM instructions using synthetic fixtures
         run: python -m unittest discover -s firmware/tools/qnx66_tests -v
   native-video:
@@ -26,6 +27,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Install host decode test dependency
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+      - run: python3 -m pip install -r firmware/requirements.txt
       - name: Build and check native receiver on the host
         run: |
           cmake -S firmware/native -B /tmp/openbyd-video-build -DOBD_SANITIZE=ON -DCMAKE_BUILD_TYPE=Debug
