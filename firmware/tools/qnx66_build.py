@@ -26,6 +26,38 @@ ROOT = Path(__file__).resolve().parents[1]
 TARGETS = {"song-plus-dmi-2021", "tang-plus-dmi-2021"}
 
 
+def baseline_header(target):
+    profiles = json.loads((ROOT / "baselines.json").read_text())["profiles"]
+    profile = profiles[target]
+    files = profile["runtime_fingerprints"]
+    required = {
+        "/base/app/rc_hmi/rc_hmi.exe",
+        "/base/app/rc_hmi/ui.so",
+        "/base/app/rc_hmi/bic_byd_stha.kzb",
+        "/proc/boot/libc.so.3",
+    }
+    if set(files) != required or not re.fullmatch(
+        r"[0-9a-f]{64}", profile["original_zip_sha256"]
+    ):
+        raise ValueError("Invalid baseline fingerprints")
+    if not re.fullmatch(r"[0-9.\-]+", profile["base_version"]):
+        raise ValueError("Invalid baseline version")
+    lines = [
+        f'#define OBD_BASE_VERSION "{profile["base_version"]}"',
+        f'#define OBD_BASE_ZIP_SHA256 "{profile["original_zip_sha256"]}"',
+        "static const obd_baseline_file obd_compiled_baseline_files[4]={",
+    ]
+    for path, row in sorted(files.items()):
+        if (
+            type(row["bytes"]) is not int
+            or not 0 < row["bytes"] <= 32 * 1024 * 1024
+            or not re.fullmatch(r"[0-9a-f]{64}", row["sha256"])
+        ):
+            raise ValueError("Invalid baseline file")
+        lines.append(f'{{"{path}",{row["bytes"]},"{row["sha256"]}"}},')
+    return "\n".join(lines + ["};", ""])
+
+
 def command(args):
     result = subprocess.run(args, capture_output=True, text=True, timeout=90)
     if result.returncode:
@@ -114,7 +146,7 @@ def inspect(data, exports, kind):
     }
 
 
-def build(libc, expected_digest, output, target, clang, lld):
+def build(libc, expected_digest, output, target, clang, lld, platform=False):
     if target not in TARGETS or not re.fullmatch(r"[0-9a-f]{64}", expected_digest):
         raise ValueError("Explicit research target and lowercase SHA256 required")
     if os.path.lexists(output):
@@ -146,12 +178,31 @@ def build(libc, expected_digest, output, target, clang, lld):
         view.write_bytes(link_view(original))
         native = ROOT / "native"
         source_paths = sorted(
-            [path for directory in (native / "core", native / "qnx66")
-             for path in directory.rglob("*") if path.suffix in {".c", ".h", ".S"}]
-            + [Path(__file__).resolve(), ROOT / "tools/qnx66_elf.py"]
+            [
+                path
+                for directory in (
+                    native / "core",
+                    native / "qnx66",
+                    native / "vendor/monocypher",
+                )
+                for path in directory.rglob("*")
+                if path.suffix in {".c", ".h", ".S"}
+            ]
+            + [
+                Path(__file__).resolve(),
+                ROOT / "tools/qnx66_elf.py",
+                ROOT / "baselines.json",
+                native / "vendor/monocypher/LICENCE.md",
+                native / "vendor/monocypher/upstream.json",
+            ]
         )
-        source_hashes = {path.relative_to(ROOT).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
-                         for path in source_paths}
+        source_hashes = {
+            path.relative_to(ROOT).as_posix(): hashlib.sha256(
+                path.read_bytes()
+            ).hexdigest()
+            for path in source_paths
+        }
+        (intermediate / "obd_baseline_generated.h").write_text(baseline_header(target))
         flags = [
             clang,
             "--target=armv7-none-eabi",
@@ -173,11 +224,21 @@ def build(libc, expected_digest, output, target, clang, lld):
             str(native / "qnx66/include"),
             "-I",
             str(native / "core"),
+            "-I",
+            str(intermediate),
+            "-I",
+            str(native / "qnx66"),
+            "-I",
+            str(native / "vendor/monocypher"),
         ]
         objects = {}
-        for name, source in {
+        sources = {
             "core": native / "core/lhf2.c",
             "trial": native / "core/trial.c",
+            "sha256": native / "core/sha256.c",
+            "baseline": native / "core/baseline.c",
+            "baseline_platform": native / "qnx66/baseline_platform.c",
+            "readonly": native / "qnx66/readonly.c",
             "entry": native / "qnx66/start.S",
             "startup": native / "qnx66/start.c",
             "probe": native / "qnx66/probe.c",
@@ -190,13 +251,35 @@ def build(libc, expected_digest, output, target, clang, lld):
             "stream": native / "qnx66/stream.c",
             "inspect": native / "qnx66/inspect.c",
             "inspect_main": native / "qnx66/inspect_main.c",
-        }.items():
+        }
+        if platform:
+            sources.update(
+                {
+                    "generation": native / "core/generation.c",
+                    "trial_record": native / "core/trial_record.c",
+                    "profile": native / "core/profile.c",
+                    "disk": native / "qnx66/disk.c",
+                    "store": native / "qnx66/store.c",
+                    "install_main": native / "qnx66/install_main.c",
+                    "boot_main": native / "qnx66/boot_main.c",
+                    "guard": native / "qnx66/guard.c",
+                    "crypto": native / "vendor/monocypher/monocypher.c",
+                    "ed25519": native / "vendor/monocypher/monocypher-ed25519.c",
+                    "usb_txn": native / "core/usb_txn.c",
+                    "hmi_txn": native / "core/hmi_txn.c",
+                    "usb_plan": native / "qnx66/usb_plan.c",
+                    "process_wait": native / "qnx66/process_wait.c",
+                }
+            )
+        for name, source in sources.items():
             obj = intermediate / f"{name}.o"
             extra = [] if source.suffix == ".S" else ["-std=c99", "-pedantic"]
-            if name == "io":
+            if name in {"io", "crypto", "ed25519"}:
                 # Speed optimization lowers constant nanosecond division inline;
                 # size optimization can introduce an unavailable AEABI divide helper.
                 extra += ["-O2"]
+            if platform and name == "player":
+                extra += ["-DOBD_WITH_SUPERVISION"]
             command(
                 flags
                 + extra
@@ -260,6 +343,8 @@ def build(libc, expected_digest, output, target, clang, lld):
                 objects["startup"],
                 objects["probe"],
                 objects["core"],
+                objects["sha256"],
+                objects["aeabi"],
                 str(view),
                 "-o",
                 str(probe),
@@ -291,6 +376,11 @@ def build(libc, expected_digest, output, target, clang, lld):
                 objects["network"],
                 objects["io"],
                 objects["stream"],
+                objects["sha256"],
+                objects["baseline"],
+                objects["baseline_platform"],
+                objects["readonly"],
+                *([objects["guard"]] if platform else []),
                 str(view),
                 "-o",
                 str(player),
@@ -304,17 +394,99 @@ def build(libc, expected_digest, output, target, clang, lld):
         player.chmod(0o755)
         inspect_name = f"obd-qnx66-inspect-{target}.elf"
         inspector = stage / inspect_name
-        command(link_flags + [
-            "-e", "_start", "--image-base=0x08048000",
-            "--dynamic-linker=/usr/lib/ldqnx.so.2",
-            objects["entry"], objects["startup"], objects["inspect_main"],
-            objects["inspect"], objects["media_load"], objects["aeabi"],
-            str(view), "-o", str(inspector),
-        ])
+        command(
+            link_flags
+            + [
+                "-e",
+                "_start",
+                "--image-base=0x08048000",
+                "--dynamic-linker=/usr/lib/ldqnx.so.2",
+                objects["entry"],
+                objects["startup"],
+                objects["inspect_main"],
+                objects["inspect"],
+                objects["media_load"],
+                objects["aeabi"],
+                str(view),
+                "-o",
+                str(inspector),
+            ]
+        )
         inspect_data = bytearray(inspector.read_bytes())
-        struct.pack_into("<I", inspect_data, 36, struct.unpack_from("<I", inspect_data, 36)[0] | 2)
+        struct.pack_into(
+            "<I", inspect_data, 36, struct.unpack_from("<I", inspect_data, 36)[0] | 2
+        )
         inspector.write_bytes(inspect_data)
         inspector.chmod(0o755)
+        platform_artifacts = {}
+        if platform:
+            common = [
+                objects[n]
+                for n in (
+                    "entry",
+                    "startup",
+                    "generation",
+                    "trial",
+                    "trial_record",
+                    "profile",
+                    "sha256",
+                    "crypto",
+                    "ed25519",
+                    "disk",
+                    "store",
+                    "baseline",
+                    "baseline_platform",
+                    "readonly",
+                    "aeabi",
+                )
+            ]
+            for kind, entry, extra in [
+                ("install", "install_main", []),
+                ("supervisor", "boot_main", [objects["io"], objects["process_wait"]]),
+            ]:
+                name = f"obd-qnx66-{kind}-{target}.elf"
+                destination = stage / name
+                command(
+                    link_flags
+                    + [
+                        "-e",
+                        "_start",
+                        "--image-base=0x08048000",
+                        "--dynamic-linker=/usr/lib/ldqnx.so.2",
+                        *common,
+                        objects[entry],
+                        *extra,
+                        str(view),
+                        "-o",
+                        str(destination),
+                    ]
+                )
+                data = bytearray(destination.read_bytes())
+                struct.pack_into(
+                    "<I", data, 36, struct.unpack_from("<I", data, 36)[0] | 2
+                )
+                destination.write_bytes(data)
+                destination.chmod(0o755)
+                platform_artifacts[name] = inspect(bytes(data), exports, "probe")
+            name = "libopenbyddisplay-platform.so.0"
+            destination = stage / name
+            command(
+                link_flags
+                + [
+                    "-shared",
+                    "--soname=" + name,
+                    *[
+                        objects[n]
+                        for n in ("usb_txn", "hmi_txn", "usb_plan", "profile", "aeabi")
+                    ],
+                    str(view),
+                    "-o",
+                    str(destination),
+                ]
+            )
+            platform_artifacts[name] = inspect(
+                destination.read_bytes(), exports, "library"
+            )
         report = {
             "format": 1,
             "target": target,
@@ -329,6 +501,9 @@ def build(libc, expected_digest, output, target, clang, lld):
                 inspect_name: inspect(bytes(inspect_data), exports, "probe"),
             },
             "sdk_used": False,
+            "platform_artifacts": platform_artifacts,
+            "native_platform_built": platform,
+            "host_fault_injection_compiled": False,
             "vendor_crt_copied": False,
             "qnx_execution_verified": False,
             "hardware_verified": False,
@@ -343,8 +518,11 @@ def build(libc, expected_digest, output, target, clang, lld):
             final_input = stream.read(MAX_ELF + 1)
         if hashlib.sha256(final_input).hexdigest() != expected_digest:
             raise ValueError("Runtime input changed during build")
-        if any(hashlib.sha256(path.read_bytes()).hexdigest() != source_hashes[path.relative_to(ROOT).as_posix()]
-               for path in source_paths):
+        if any(
+            hashlib.sha256(path.read_bytes()).hexdigest()
+            != source_hashes[path.relative_to(ROOT).as_posix()]
+            for path in source_paths
+        ):
             raise ValueError("Native source changed during build")
         if os.path.lexists(output):
             raise ValueError("Output appeared during build; refusing replacement")
@@ -360,6 +538,11 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--clang", default="clang")
     parser.add_argument("--lld", default="ld.lld")
+    parser.add_argument(
+        "--platform",
+        action="store_true",
+        help="Also compile native signed store, supervisor and backend policy",
+    )
     args = parser.parse_args()
     try:
         report = build(
@@ -369,6 +552,7 @@ def main():
             args.target,
             args.clang,
             args.lld,
+            args.platform,
         )
     except (ValueError, OSError, RuntimeError, ELFError, struct.error) as error:
         parser.exit(1, f"Build refused: {error}\n")

@@ -36,6 +36,8 @@ static uint64_t io_now(void) {
     return (uint64_t)(uint32_t)t.seconds*1000+(uint32_t)t.nanoseconds/1000000;
 }
 #endif
+static int (*watch_tick)(void);
+void obd_io_watch(int (*tick)(void)) { watch_tick=tick; }
 void obd_io_platform(obd_io_api *api) {
     api->read=io_read; api->write=io_write; api->poll=io_poll; api->error=io_error; api->now=io_now;
 }
@@ -57,16 +59,19 @@ int obd_io_retry(obd_io *io) {
 }
 int obd_io_wait(obd_io *io,int fd,short events) {
     for(;;) {
+        if(watch_tick && watch_tick()) return OBD_IO_CANCELLED;
         uint64_t now=io->api.now();
         if(io->cancel && *io->cancel) return OBD_IO_CANCELLED;
         if(!now) return OBD_IO_FAILED;
         if(now>=io->deadline) return OBD_IO_TIMEOUT;
         int timeout=io->deadline-now>5000?5000:(int)(io->deadline-now);
+        if(watch_tick && timeout>250) timeout=250;
         obd_pollfd p={fd,events,0};
         int result=io->api.poll(&p,1,timeout);
+        if(watch_tick && watch_tick()) return OBD_IO_CANCELLED;
         if(io->cancel && *io->cancel) return OBD_IO_CANCELLED;
         if(result<0) { if(io->api.error()==EINTR) continue; return -1; }
-        if(!result) return OBD_IO_TIMEOUT;
+        if(!result) { if(watch_tick) continue; return OBD_IO_TIMEOUT; }
         if(p.revents&0x28) return OBD_IO_FAILED;
         if(p.revents&events) return 0;
         if(p.revents&0x10) return events==1?0:-1; /* Drain read bytes before EOF. */

@@ -1,0 +1,112 @@
+{
+  "format": 1,
+  "scope": "supplied baseline fingerprints, not hardware identity attestation",
+  "profiles": {
+    "song-plus-dmi-2021": {
+      "base_version": "1.0.0",
+      "original_test_evidence": "user-reported corresponding-model vehicle test",
+      "original_zip_sha256": "659de3b001937f9b4330c80a792d27c0f8eb4b86d483fe643b9dcdbfd9443033",
+      "outer_files": {
+        "RcAppVersion": {
+          "bytes": 13,
+          "sha256": "5b604cdb6ce90ff0004bd81463e5028a2bfd2e0557dc2c015df4a3868a38de8a"
+        },
+        "app.sv": {
+          "bytes": 105519779,
+          "sha256": "d8f82e846dbfb570af6fe12b9c2bed83c861f324d6666f892febc5fd7b8b4707"
+        },
+        "kzbVersion": {
+          "bytes": 21,
+          "sha256": "a103c8fa49730744fc004b031688e6ae346c08d7baff5d370073612b58e77646"
+        },
+        "mcu.sv": {
+          "bytes": 267266,
+          "sha256": "156773d488bc203cc76c8a60aefb71a5ca302f5e1e05582440e3b51d50fca90d"
+        },
+        "os.sv": {
+          "bytes": 55619562,
+          "sha256": "727cc83bdfd529909ba1b11f49299318de9b0efa9830cb3ce06d3dfa228e6c93"
+        },
+        "version_svp": {
+          "bytes": 161,
+          "sha256": "fc6eaabe209eab86893d43cfee167d7ca3a48211cca52805f9263ba1eeda3236"
+        }
+      },
+      "runtime_fingerprints": {
+        "/base/app/rc_hmi/rc_hmi.exe": {
+          "bytes": 11296840,
+          "sha256": "d1463e31b78807036b2a473dbbd90345a35200cc67a64c7a506ed9207b7f1a03"
+        },
+        "/base/app/rc_hmi/bic_byd_stha.kzb": {
+          "bytes": 19500211,
+          "sha256": "3c085c9bf120b21a068aa13427144c4c2806715488fc29b513ef391979e3231a"
+        },
+        "/base/app/rc_hmi/ui.so": {
+          "bytes": 154541,
+          "sha256": "2f3ca9053a22102f09e62b62e20904e45074363edc133e6b38c11111c86c8e57"
+        },
+        "/proc/boot/libc.so.3": {
+          "bytes": 590330,
+          "sha256": "72c66804b7e4b64e24146559977e840049057894e08c4676815b810998d2b2c7"
+        }
+      },
+      "modified_vehicle_verified": false,
+      "instrument_board_verified": false,
+      "service_port": 47792,
+      "autostart_enabled": false
+    },
+    "tang-plus-dmi-2021": {
+      "base_version": "1.0.3-1017",
+      "original_test_evidence": "user-reported corresponding-model vehicle test",
+      "original_zip_sha256": "b5d188688a3420f4a92609545616cef362b1d47f148770172cf3b6048606e07b",
+      "outer_files": {
+        "RcAppVersion": {
+          "bytes": 13,
+          "sha256": "5b604cdb6ce90ff0004bd81463e5028a2bfd2e0557dc2c015df4a3868a38de8a"
+        },
+        "app.sv": {
+          "bytes": 106894927,
+          "sha256": "0d5de797af535b1292fef0e8a092f3ee7adb8db26aedc8a8224b2c5ce4d52091"
+        },
+        "kzbVersion": {
+          "bytes": 21,
+          "sha256": "a103c8fa49730744fc004b031688e6ae346c08d7baff5d370073612b58e77646"
+        },
+        "mcu.sv": {
+          "bytes": 267266,
+          "sha256": "156773d488bc203cc76c8a60aefb71a5ca302f5e1e05582440e3b51d50fca90d"
+        },
+        "os.sv": {
+          "bytes": 55619562,
+          "sha256": "727cc83bdfd529909ba1b11f49299318de9b0efa9830cb3ce06d3dfa228e6c93"
+        },
+        "version_svp": {
+          "bytes": 161,
+          "sha256": "fc6eaabe209eab86893d43cfee167d7ca3a48211cca52805f9263ba1eeda3236"
+        }
+      },
+      "runtime_fingerprints": {
+        "/base/app/rc_hmi/rc_hmi.exe": {
+          "bytes": 11296840,
+          "sha256": "fb62c4a9f0c09c281ff9a31547da3175c8e710787d59cd075a04c85717286b4d"
+        },
+        "/base/app/rc_hmi/bic_byd_stha.kzb": {
+          "bytes": 18372968,
+          "sha256": "3aa6104fd4b22457d44b75facda71c940c1a155b051330ed53f3e781d7b8f05d"
+        },
+        "/base/app/rc_hmi/ui.so": {
+          "bytes": 149700,
+          "sha256": "08632eacc7a47a0e582f855817efe896a17207fe32de925cb0134c89df4c221b"
+        },
+        "/proc/boot/libc.so.3": {
+          "bytes": 590330,
+          "sha256": "72c66804b7e4b64e24146559977e840049057894e08c4676815b810998d2b2c7"
+        }
+      },
+      "modified_vehicle_verified": false,
+      "instrument_board_verified": false,
+      "service_port": 47792,
+      "autostart_enabled": false
+    }
+  }
+}

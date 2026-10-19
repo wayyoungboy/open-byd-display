@@ -17,3 +17,8 @@ Their mention does not imply affiliation, endorsement, or trademark permission.
 Gradle wrapper, Kotlin and AndroidX components are used under the Apache License
 2.0. Their copyright notices remain with the original distributions. A copy of
 Apache-2.0 is included in LICENSES and in the Android app's license assets.
+
+Native Ed25519 verification uses unmodified Monocypher 4.0.3 source, under its
+BSD-2-Clause option. Copyright notices and full dual licence are retained in
+firmware/native/vendor/monocypher/LICENCE.md and individual upstream files.
+No vendor firmware cryptography implementation or private key is reused.
