@@ -1,6 +1,7 @@
 #include "stream.h"
 #include "network.h"
 #include "io.h"
+#include "baseline_platform.h"
 #include <string.h>
 extern int getpid(void);
 extern int dup2(int,int);
@@ -51,9 +52,17 @@ static int play(int argc,char **argv,int continuous) {
 int main(int argc,char **argv) {
     if(signal(2,stop)==(void (*)(int))-1 || signal(15,stop)==(void (*)(int))-1 ||
         signal(13,stop)==(void (*)(int))-1) return 71;
-    if(argc==13 && (!strcmp(argv[1],"--tcp") || !strcmp(argv[1],"--serve"))) {
-        int port,continuous=!strcmp(argv[1],"--serve");
+    if(argc==2 && !strcmp(argv[1],"--identity")) return obd_baseline_identity();
+    if(argc==2 && !strcmp(argv[1],"--baseline-check")) return obd_baseline_platform_check(&stopped);
+    if(argc==13 && (!strcmp(argv[1],"--tcp") || !strcmp(argv[1],"--serve") || !strcmp(argv[1],"--baseline-serve"))) {
+        int bound=!strcmp(argv[1],"--baseline-serve");
+        int port,continuous=strcmp(argv[1],"--tcp")!=0;
         if(number(argv[3],&port) || port<1024 || port>65535) return 64;
+        if(bound) {
+            if(port!=47792) return 64;
+            int checked=obd_baseline_platform_check(&stopped);
+            if(checked) return checked;
+        }
         obd_video_listener listener;
         if(obd_video_listen(argv[2],(unsigned)port,&listener)) return 72;
         if(listener.fd<=2) { obd_video_listener_close(&listener); return 72; }

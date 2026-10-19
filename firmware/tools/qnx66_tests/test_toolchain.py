@@ -40,6 +40,9 @@ class ToolchainTest(unittest.TestCase):
             "void *dlsym(void*a,const char*n){(void)a;(void)n;return 0;}\n"
             "int dlclose(void*a){(void)a;return 0;}\n"
             "int read(int f,void*p,unsigned n){(void)f;(void)p;(void)n;return -1;}\n"
+            "int open(const char*p,int f,...){(void)p;(void)f;return -1;}\n"
+            "int lstat(const char*p,void*s){(void)p;(void)s;return -1;}\n"
+            "int fstat(int f,void*s){(void)f;(void)s;return -1;}\n"
             "void *malloc(unsigned n){(void)n;return 0;}\n"
             "void free(void*p){(void)p;}\n"
             "int getpid(void){return 1;}\n"
@@ -221,6 +224,7 @@ class ToolchainTest(unittest.TestCase):
                 self.assertEqual(result["json"]["target"], target)
                 self.assertTrue(result["json"]["crc32_ok"])
                 self.assertTrue(result["json"]["lhf2_header_ok"])
+                self.assertTrue(result["json"]["sha256_ok"])
                 self.assertFalse(result["json"]["hardware_verified"])
                 self.assertFalse(result["json"]["vehicle_visual_verified"])
             self.assertEqual(probe_model(probe, write_failure=True)["exit"], 12)

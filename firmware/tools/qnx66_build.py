@@ -26,6 +26,27 @@ ROOT = Path(__file__).resolve().parents[1]
 TARGETS = {"song-plus-dmi-2021", "tang-plus-dmi-2021"}
 
 
+def baseline_header(target):
+    profiles = json.loads((ROOT / "baselines.json").read_text())["profiles"]
+    profile = profiles[target]
+    files = profile["runtime_fingerprints"]
+    required = {"/base/app/rc_hmi/rc_hmi.exe", "/base/app/rc_hmi/ui.so",
+                "/base/app/rc_hmi/bic_byd_stha.kzb", "/proc/boot/libc.so.3"}
+    if set(files) != required or not re.fullmatch(r"[0-9a-f]{64}", profile["original_zip_sha256"]):
+        raise ValueError("Invalid baseline fingerprints")
+    if not re.fullmatch(r"[0-9.\-]+", profile["base_version"]):
+        raise ValueError("Invalid baseline version")
+    lines = [f'#define OBD_BASE_VERSION "{profile["base_version"]}"',
+             f'#define OBD_BASE_ZIP_SHA256 "{profile["original_zip_sha256"]}"',
+             'static const obd_baseline_file obd_compiled_baseline_files[4]={']
+    for path, row in sorted(files.items()):
+        if (type(row["bytes"]) is not int or not 0 < row["bytes"] <= 32 * 1024 * 1024
+                or not re.fullmatch(r"[0-9a-f]{64}", row["sha256"])):
+            raise ValueError("Invalid baseline file")
+        lines.append(f'{{"{path}",{row["bytes"]},"{row["sha256"]}"}},')
+    return "\n".join(lines + ['};', ''])
+
+
 def command(args):
     result = subprocess.run(args, capture_output=True, text=True, timeout=90)
     if result.returncode:
@@ -148,10 +169,11 @@ def build(libc, expected_digest, output, target, clang, lld):
         source_paths = sorted(
             [path for directory in (native / "core", native / "qnx66")
              for path in directory.rglob("*") if path.suffix in {".c", ".h", ".S"}]
-            + [Path(__file__).resolve(), ROOT / "tools/qnx66_elf.py"]
+            + [Path(__file__).resolve(), ROOT / "tools/qnx66_elf.py", ROOT / "baselines.json"]
         )
         source_hashes = {path.relative_to(ROOT).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
                          for path in source_paths}
+        (intermediate / "obd_baseline_generated.h").write_text(baseline_header(target))
         flags = [
             clang,
             "--target=armv7-none-eabi",
@@ -173,11 +195,16 @@ def build(libc, expected_digest, output, target, clang, lld):
             str(native / "qnx66/include"),
             "-I",
             str(native / "core"),
+            "-I", str(intermediate),
         ]
         objects = {}
         for name, source in {
             "core": native / "core/lhf2.c",
             "trial": native / "core/trial.c",
+            "sha256": native / "core/sha256.c",
+            "baseline": native / "core/baseline.c",
+            "baseline_platform": native / "qnx66/baseline_platform.c",
+            "readonly": native / "qnx66/readonly.c",
             "entry": native / "qnx66/start.S",
             "startup": native / "qnx66/start.c",
             "probe": native / "qnx66/probe.c",
@@ -260,6 +287,8 @@ def build(libc, expected_digest, output, target, clang, lld):
                 objects["startup"],
                 objects["probe"],
                 objects["core"],
+                objects["sha256"],
+                objects["aeabi"],
                 str(view),
                 "-o",
                 str(probe),
@@ -291,6 +320,10 @@ def build(libc, expected_digest, output, target, clang, lld):
                 objects["network"],
                 objects["io"],
                 objects["stream"],
+                objects["sha256"],
+                objects["baseline"],
+                objects["baseline_platform"],
+                objects["readonly"],
                 str(view),
                 "-o",
                 str(player),

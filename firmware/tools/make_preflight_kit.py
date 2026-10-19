@@ -66,7 +66,7 @@ def build_files(directory, target, source=None):
     expected_sources = {p.relative_to(REPO / "firmware").as_posix()
                         for directory_ in (REPO / "firmware/native/core", REPO / "firmware/native/qnx66")
                         for p in directory_.rglob("*") if p.suffix in {".c", ".h", ".S"}}
-    expected_sources |= {"tools/qnx66_build.py", "tools/qnx66_elf.py"}
+    expected_sources |= {"tools/qnx66_build.py", "tools/qnx66_elf.py", "baselines.json"}
     if not isinstance(hashes, dict) or set(hashes) != expected_sources:
         raise ValueError("build_source_coverage_mismatch")
     for name, digest in hashes.items():

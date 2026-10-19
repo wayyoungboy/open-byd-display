@@ -49,6 +49,7 @@ jobs:
       - run: python -m pip install -r firmware/requirements.txt
       - run: python -m unittest discover -s headunit/tools/tests -v
       - run: python -m unittest discover -s firmware/tools/kit_tests -v
+      - run: python -m unittest discover -s firmware/tools/model_tests -v
       - run: python -m unittest discover -s firmware/tests -v
         env:
           PYTHONPATH: firmware
