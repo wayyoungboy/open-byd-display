@@ -22,3 +22,4 @@ artifacts/
 *.log
 *.pyc
 **/*token*.txt
+/preflight-local/

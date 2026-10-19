@@ -30,7 +30,13 @@ static int play(int argc,char **argv,int continuous) {
     if(n<0 || (size_t)n>=sizeof(session)) return 64;
     obd_media_config config={session,values[0],values[1],values[2],values[3],values[4],values[5],values[6],255,values[7],0,0,0};
     obd_media_api api; void *libraries[4];
-    if(obd_media_load(&api,libraries)) return 69;
+    obd_media_load_error load_error;
+    if(obd_media_load_diagnostic(&api,libraries,&load_error)) {
+        char text[384];
+        int count=snprintf(text,sizeof(text),"{\"event\":\"library_load_failed\",\"library_index\":%d,\"missing_symbol\":\"%s\",\"cleanup_confirmed\":%s}\n",load_error.library,load_error.symbol?load_error.symbol:"",load_error.cleanup_failed?"false":"true");
+        if(count>0 && (size_t)count<sizeof(text)) (void)write(2,text,(unsigned)count);
+        return load_error.cleanup_failed?75:69;
+    }
     int input_flags,output_flags,result;
     if(obd_io_nonblock(0,&input_flags)) { obd_media_unload(libraries); return 71; }
     if(obd_io_nonblock(1,&output_flags)) {

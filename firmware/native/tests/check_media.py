@@ -99,6 +99,7 @@ class Media(C.Structure):
         ]
         + [("submitted", C.c_uint), ("posts", C.c_uint), ("sequence", Sequence)]
         + [(n, C.c_char * 64) for n in ("group", "video", "channel_name")]
+        + [("diagnostic_stage", C.c_char_p)]
     )
 
 
@@ -344,6 +345,8 @@ class MediaTests(unittest.TestCase):
             with self.subTest(point=point):
                 model = Model(LIB, point)
                 self.assertNotEqual(model.open(), 0)
+                self.assertTrue(model.media.diagnostic_stage)
+                self.assertNotEqual(model.media.diagnostic_stage, b"ready")
                 model.close()
                 model.check_closed(self)
 

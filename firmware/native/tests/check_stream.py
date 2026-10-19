@@ -117,6 +117,11 @@ class StreamTests(unittest.TestCase):
         peer = Peer(LIB, model_class=FailedCleanup)
         try:
             peer.client.sendall(HELLO)
+            failure = peer.reply()
+            self.assertFalse(failure["ok"])
+            self.assertEqual(failure["error"], "media_open")
+            self.assertEqual(failure["media_stage"], "window_create")
+            self.assertFalse(failure["cleanup_confirmed"])
             self.assertEqual(peer.input.read(), b"")
         finally:
             peer.close()

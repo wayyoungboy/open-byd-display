@@ -70,7 +70,9 @@ def send_video(host, port, data, width, height, fps):
             + struct.pack(">4I", width, height, fps, 0)
         )
         greeting = reply()
-        if greeting.get("ready") is not True or greeting.get("protocol") != "LHF2":
+        if (greeting.get("ready") is not True or greeting.get("protocol") != "LHF2"
+                or greeting.get("service") != "openbyddisplay.video"
+                or type(greeting.get("wire_version")) is not int or greeting["wire_version"] != 1):
             raise ValueError("Receiver is not ready")
         for sequence, frame in enumerate(frames):
             key = any(

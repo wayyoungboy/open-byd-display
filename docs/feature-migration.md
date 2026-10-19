@@ -6,6 +6,8 @@
 
 ## 三种状态
 
+首次接机前的离线材料、诊断与停止步骤见[接机准备](preflight.md)。原生试启动决策核心已编译实现，不等于 QNX 安装/启动后端完成；下列缺口继续保留。
+
 - 源码：本分支可到达的实现；有协议模型但没有生产后端时标为“部分”，不能标为完整功能。
 - 发布：截至本次核对，OpenBYDDisplay 最新 Release 为 [v0.1.1](https://github.com/wayyoungboy/open-byd-display/releases/tag/v0.1.1)；主分支代码及 CI artifact 不自动算作已发布 Release。
 - 实车：仅记录本项目、对应包与目标硬件的证据。小灰灰历史实测可供回归设计，不能继承为新包已经验证。

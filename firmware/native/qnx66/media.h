@@ -62,6 +62,7 @@ typedef struct {
     unsigned submitted, posts;
     obd_lhf2_state sequence;
     char group[64], video[64], channel_name[64];
+    const char *diagnostic_stage; /* Static literal; not an on-disk/public ABI. */
 } obd_media;
 /* Caller serializes access; close after success and failure. No pixel/vehicle claim. */
 int obd_media_open(obd_media *, const obd_media_api *, const obd_media_config *);
@@ -70,5 +71,7 @@ int obd_media_events(obd_media *);
 int obd_media_window(obd_media *, int x, int y, int width, int height, int opacity);
 int obd_media_close(obd_media *);
 int obd_media_load(obd_media_api *, void *libraries[4]);
+typedef struct { int library; const char *symbol; int cleanup_failed; } obd_media_load_error;
+int obd_media_load_diagnostic(obd_media_api *, void *libraries[4], obd_media_load_error *);
 void obd_media_unload(void *libraries[4]);
 #endif
