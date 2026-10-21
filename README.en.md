@@ -46,25 +46,26 @@ The project is in the **update-pipeline research stage**. It provides the transp
 | Casting development | `headunit/`, `firmware/native/qnx66/` | Mirror, independent map/Presentation source, calibrated layouts, encoder overlays, strict receipts and reconnect; 70-frame host interop, Android/QNX devices unverified |
 | Native video core | `firmware/native/` | Independent C99 BVL1/LHF2 validation and loopback receiving, checked with real host H.264 decoding; not QNX firmware |
 | SDK-independent ARM build | `firmware/tools/qnx66_build.py` | Clang/LLD links an ARM32 probe, media library and continuous/short-session TCP and stdin player against an external original runtime; QNX execution remains unverified |
+| Native service updates (0.1.5 development) | `headunit/`, `firmware/native/qnx66/` | OBG upload over TCP 47793, signature and model/baseline checks, installation, supervised trial and rollback; host interop for Song and Tang, QNX/device verification pending |
 | FUP2 packaging tool | `firmware/openbyddisplay/packages.py` | Generates Ed25519 keys and builds signed, target-bound FUP2 component packages |
 | Release tooling | `headunit/tools/`, `.github/workflows/` | CI, signed-APK release pipeline and release-asset generation |
 
 > [!IMPORTANT]
-> **There is currently no self-developed QNX firmware that can be flashed to a real car, and the new app has not passed an on-vehicle display acceptance test.** The `firmware/` service is a laboratory program, not a cluster image. It never runs a package's `install.sh`, never writes vehicle partitions and never touches boot records. Cast receiving/rendering on the cluster, a native QNX update backend and a full-vehicle recovery flow are still under development.
+> **There is currently no self-developed QNX firmware that can be flashed to a real car, and the new app has not passed an on-vehicle display acceptance test.** The `firmware/` service is a laboratory program, not a cluster image. It never runs a package's `install.sh`, never writes vehicle partitions and never touches boot records. Cast receiving/rendering on the cluster, the native update backend on QNX and a full-vehicle recovery flow still require device validation. See [native service updates](docs/native-update.md).
 
 ## Features
 
 Implemented in this repository:
 
 - **No login, VIP tier, commercial license or token.** The wire encoder refuses to send `token` / `client_time` fields.
-- **USB NCM transport** — newline-delimited JSON over TCP (default port `47785`). When the cluster address is in `192.168.77.x`, the client binds to the head unit's NCM address `192.168.77.2`; the default cluster host is `192.168.77.1`. The app does not configure the NCM interface itself.
+- **USB NCM transport** — newline-delimited JSON over TCP (`47793` for native OBG service updates; `47785` for legacy lab ZIP/FUP2). When the cluster address is in `192.168.77.x`, the client binds to the head unit's NCM address `192.168.77.2`; the default cluster host is `192.168.77.1`. The app does not configure the NCM interface itself.
 - **Local package pre-check** before anything is sent:
   - **ZIP firmware packages:** exactly the six required files (`app.sv`, `os.sv`, `mcu.sv`, `kzbVersion`, `RcAppVersion`, `version_svp`) plus optional `patch.sv`, path sanitisation, ZIP CRC and the MD5 of each SV compressed body.
   - **FUP2 component packages:** header, manifest, paths and per-file payload SHA-256.
 - **Streaming upload** with progress, a 30-second stall watchdog and no whole-package buffering in memory.
 - **Upload and install are separate, explicit user actions.** Install requires ticking *"I have parked and verified the vehicle model and cluster hardware"*; the app sends the confirmation word `INSTALL_COMPONENTS` or `FLASH_FIRMWARE`.
 - **Safe-by-default job handling:** the job state is persisted, the "apply attempted" flag is saved *before* the request is sent, uncertain results are only ever queried and never re-submitted automatically, and a corrupted local job record blocks new jobs instead of being overwritten.
-- **Pre-flight cluster checks:** reads `update.info` capabilities and requires `cast.status` to report the cluster idle (not casting) before uploading.
+- **Pre-flight cluster checks:** reads `update.info` capabilities and requires `cast.status` for legacy lab updates; native OBG updates use model/baseline/key checks, with mutation/cast exclusion and explicitly allowed video during health trials.
 - **Opt-in boot startup (0.1.1+).** Disabled by default. A system boot can open the app when permitted, or offer a notification. It never resumes uploads, installs packages or starts casting. Android 10+ needs permission to open an activity from the background; OEM behavior still requires vehicle testing.
 - **ADB assistant.** Read-only package, permission and IPv4 diagnostics by default. Explicit configuration sets only the selected app's overlay app-op and opens the app; the user enables startup in the app. See [ADB and startup](docs/adb-and-startup.md).
 - **Lab service features:** Ed25519 signature verification, payload digests, target and hardware-ID binding, downgrade refusal, immutable sandbox generations with atomic `current.json` publishing, and regression tests for interrupted transfers, lost final replies, duplicate requests and partial publishes.

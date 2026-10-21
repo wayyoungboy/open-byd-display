@@ -291,7 +291,7 @@ def compose(original, artifacts, target, profile, config, key, source):
         },
         target,
         profile["original_zip_sha256"],
-        "0.2.0",
+        "0.3.0",
         key,
         ident,
     )

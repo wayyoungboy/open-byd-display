@@ -1,6 +1,6 @@
 # 更新协议与实现边界
 
-新增的原生 `.obg` 代际走本地 C 安装器，与本文 FUP2/ZIP 实验传输分开；当前 App 尚无该原生上传后端，不能直接提交 `.obg`。见[原生安装与启动](native-install-boot.md)。
+Android 0.1.5 开发源码已接通原生 `.obg` 代际传输，使用协议 3、端口 **47793**，由 C 安装器验签、暂存和交给启动管理器。宋、唐分别绑定车型和原包摘要。完整流程见[免 U 盘服务升级](native-update.md)及[原生安装与启动](native-install-boot.md)。下面的协议 2 / 47785 仍用于 FUP2/ZIP 实验，两种入口不可混用。
 
 传输为 USB NCM 网络上的 TCP JSON 行（默认47785）；现有帧协议保留 `update.info/upload/status/apply/cancel`，本项目自研端不接收或要求商业 Token/client_time。电脑实验服务只绑定127.0.0.1，不能作为实车QNX服务使用。
 

@@ -27,7 +27,7 @@
 
 | 能力 | 已实现内容 |
 | --- | --- |
-| 更新包预检 | ZIP结构、CRC、SV压缩体MD5；FUP2头、路径和载荷摘要 |
+| 更新包预检 | ZIP结构、CRC、SV压缩体MD5；FUP2及自研OBG头、路径和载荷摘要 |
 | 上传与安装 | 流式上传、独立手动安装、任务查询、停止传输与清理 |
 | 异常恢复 | 持久化任务；结果不明时保留记录，不自动重复安装 |
 | 开机自启 | 用户开启后尝试打开App；系统限制与权限状态可见 |
@@ -37,10 +37,11 @@
 | 无SDK原生构建 | Clang/LLD链接原机运行库，生成ARM32探针、播放器与媒体库；待QNX运行验证 |
 | 解码显示适配 | 持续/单会话TCP及stdin、mm-renderer/mdevpush、所属Screen窗口及失败清理；待仪表验证 |
 | 自研投屏客户端 | 镜像、独立地图/飞屏副地图、画质布局、真实音乐/LRC及导航文字、逐帧回执和重连；需匹配自研接收器 |
+| 免 U 盘服务升级（开发源码） | App→C 接收器→验签安装→管理器试启动/回退，宋、唐独立 OBG；已通过跨语言主机测试，待 QNX/NCM 实测 |
 | 增量安装实验 | 签名差量、基线绑定、完整代际重建、试启动确认及未确认回退 |
 | 车机灯控与系统接口（开发源码） | 动态多色、16 频带音乐、读回/恢复/手动让权；USB/NCM、深浅设置及大灯联动；原生律动未验证保持关闭 |
 
-仪表端投屏出画、QNX原生更新后端及整车恢复流程仍待验证或研发。Python更新实验服务只监听电脑回环地址、操作实验目录；原生播放器可显式绑定私有IPv4进行短测试或持续接收。两者均不运行包内`install.sh`、写车辆分区或修改启动记录。开机自启不会恢复上传、提交安装或自动投屏。
+仪表端投屏出画、原生更新后端的 QNX 实际运行及整车恢复流程仍待验证。Python更新实验服务只监听电脑回环地址、操作实验目录；原生播放器可显式绑定私有IPv4进行短测试或持续接收。两者均不运行包内`install.sh`、写车辆分区或修改启动记录。开机自启不会恢复上传、提交安装或自动投屏。
 
 更新包签名、摘要、车型与硬件校验继续保留。第三方固件自己的授权与信任公钥不由本项目解除；自有签名包仅适用于信任对应自有公钥的服务。MD5用于完整性检查，不作为真实性凭证。
 
@@ -77,13 +78,14 @@
 | 不使用官方SDK编译原生程序 | [Clang/LLD构建实验](docs/qnx66-open-toolchain.md) |
 | 查看解码显示及增量安装 | [原生媒体](docs/native-media.md) / [增量事务](docs/incremental-install.md) |
 | 查看原生安装、启动管理和分车型台架镜像 | [原生安装与启动](docs/native-install-boot.md) |
+| 使用或开发免 U 盘服务升级 | [原生升级流程与验证](docs/native-update.md) |
 | 研究上传、查询及安装协议 | [更新协议](docs/update-protocol.md) |
 | 了解签名、构建与版本分发 | [GitHub开发与分发](docs/github-distribution.md) |
 | 查看构建或提交适配问题 | [Actions](https://github.com/wayyoungboy/open-byd-display/actions) / [Issues](https://github.com/wayyoungboy/open-byd-display/issues) |
 
 ## 本地开发
 
-需要JDK17、Android SDK34/build-tools34.0.0、Python3.12、C编译器及带libx264的FFmpeg。配置自己的`headunit/local.properties`和Python虚拟环境后，在仓库根目录运行：
+需要JDK17、Android SDK34/build-tools34.0.0、Python3.12、CMake、C编译器及带libx264的FFmpeg。配置自己的`headunit/local.properties`和Python虚拟环境后，在仓库根目录运行：
 
 ```sh
 python3 -m pip install -r firmware/requirements.txt
