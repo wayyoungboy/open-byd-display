@@ -306,6 +306,18 @@ class NativeUpdateTests(unittest.TestCase):
         replay = self.upload(raw, ident="b" * 32)
         self.assertFalse(replay["can_install"])
 
+    def test_startup_clock_failure_does_not_wait_on_store_lock(self):
+        self.root = self.home / "store-clock-failure"
+        self.store("init")
+        self.store("status")
+        with (self.root / "store.lock").open("rb") as held:
+            fcntl.flock(held, fcntl.LOCK_EX)
+            self.process = subprocess.Popen(
+                [SERVER, *self.common(), "--address", "127.0.0.1", "--port", "47793"],
+                stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+                env=dict(os.environ, OBD_UPDATE_TEST_NO_CLOCK="1"))
+            self.assertEqual(71, self.process.wait(timeout=3))
+
     def test_bad_signature_digest_and_duplicate_id_conflict(self):
         self.start()
         for mode, ident in [("signature", "a" * 32), ("digest", "b" * 32)]:
