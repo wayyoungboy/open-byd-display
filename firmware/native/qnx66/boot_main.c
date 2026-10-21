@@ -34,7 +34,9 @@ enum { O_RDWR=2,O_CREAT=0x100,O_NONBLOCK=0x80,LOCK_EX=2,LOCK_NB=4,F_DUPFD=0 };
 #include "sha256.h"
 #include "baseline_platform.h"
 #include <string.h>
+#ifndef OBD_IO_HOST
 extern int snprintf(char *,size_t,const char *,...);
+#endif
 static volatile int stop_requested;
 static void stop(int sig) { if(sig!=13) stop_requested=1; }
 static unsigned u32(const uint8_t *p) { return (unsigned)p[0]|(unsigned)p[1]<<8|(unsigned)p[2]<<16|(unsigned)p[3]<<24; }

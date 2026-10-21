@@ -242,6 +242,8 @@ class MainActivity : Activity() {
         findViewById<TextView>(R.id.updateStatus).text = buildString {
             append(state.optString("message", "先选择与当前仪表匹配的更新包"))
             if (state.has("name")) append("\n\n包：").append(state.optString("name")).append("\n大小：").append(state.optLong("bytes") / 1024).append(" KiB")
+            if (state.has("target")) append("\n车型：").append(if (state.optString("target").startsWith("song-")) "21 款宋 PLUS DM-i" else "21 款唐 PLUS DM-i")
+            if (state.has("native_version")) append("\n自研服务版本：").append(state.optString("native_version"))
             if (state.has("sha256")) append("\nSHA256：").append(state.optString("sha256"))
             if (state.has("update_id")) append("\n任务：").append(state.optString("update_id"))
             if (busy) append("\n正在处理，请保持连接")

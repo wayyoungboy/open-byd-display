@@ -30,7 +30,9 @@ extern int *__get_errno_ptr(void);
 extern void free(void *);
 enum { O_RDWR=2,O_CREAT=0x100,O_NONBLOCK=0x80,LOCK_EX=2,LOCK_NB=4 };
 #endif
+#ifndef OBD_IO_HOST
 extern int snprintf(char *,size_t,const char *,...);
+#endif
 static int id_valid(const char *id) { uint8_t parsed[16]; return id && !obd_generation_unhex(parsed,id,16); }
 static int target_valid(const char *s) {
     return s && (!strcmp(s,"song-plus-dmi-2021") || !strcmp(s,"tang-plus-dmi-2021"));

@@ -33,7 +33,9 @@ enum { O_RDWR=2,O_CREAT=0x100,O_NONBLOCK=0x80,LOCK_EX=2,LOCK_NB=4 };
 #include "update_request.h"
 #include "baseline_platform.h"
 #include <string.h>
+#ifndef OBD_IO_HOST
 extern int snprintf(char *,size_t,const char *,...);
+#endif
 enum { NONE,RECEIVING,READY,APPLYING,AWAITING,APPLIED,CANCELLED,FAILED,RECOVERY };
 enum { E_NONE,E_TRANSFER,E_PACKAGE,E_ROLLBACK,E_UNCERTAIN,E_PROFILE,E_BUSY };
 typedef struct {
