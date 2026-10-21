@@ -314,8 +314,10 @@ class NativeUpdateTests(unittest.TestCase):
             fcntl.flock(held, fcntl.LOCK_EX)
             self.process = subprocess.Popen(
                 [SERVER, *self.common(), "--address", "127.0.0.1", "--port", "47793"],
-                stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
-                env=dict(os.environ, OBD_UPDATE_TEST_NO_CLOCK="1"))
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.PIPE,
+                env=dict(os.environ, OBD_UPDATE_TEST_NO_CLOCK="1"),
+            )
             self.assertEqual(71, self.process.wait(timeout=3))
 
     def test_bad_signature_digest_and_duplicate_id_conflict(self):

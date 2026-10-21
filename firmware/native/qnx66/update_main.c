@@ -54,6 +54,12 @@ static unsigned u32(const uint8_t *p) { return (unsigned)p[0]|(unsigned)p[1]<<8|
 static void put32(uint8_t *p,unsigned n) { for(unsigned i=0;i<4;i++) p[i]=(uint8_t)(n>>(i*8)); }
 static int nonzero(const uint8_t *p,unsigned n) { unsigned v=0; for(unsigned i=0;i<n;i++) v|=p[i]; return !!v; }
 static int open_store(service *s,obd_store *store) { return obd_store_open(store,s->root,s->target,s->baseline,s->key); }
+static uint64_t startup_now(obd_io_api *api) {
+#ifdef OBD_STORE_FAULT_TEST
+    if(getenv("OBD_UPDATE_TEST_NO_CLOCK")) return 0;
+#endif
+    return api->now();
+}
 static int save(service *s) {
     uint8_t raw[256]={0}; char file[384],next[384];
     if(s->poisoned || !s->task.phase || obd_disk_join(file,s->root,"update-task.bin") || obd_disk_join(next,s->root,"update-task.next")) return -1;
@@ -265,8 +271,11 @@ int main(int argc,char **argv) {
     if(signal(2,stop)==(void (*)(int))-1 || signal(15,stop)==(void (*)(int))-1 || signal(13,stop)==(void (*)(int))-1) return 71;
     obd_io_api wait; obd_io_platform(&wait);
     obd_store store; int opened;
-    unsigned long long deadline=wait.now()+2000;
-    while((opened=open_store(&s,&store))==OBD_STORE_BUSY && !stopping && wait.now()<deadline) {
+    uint64_t start=startup_now(&wait); if(!start) return 71;
+    while((opened=open_store(&s,&store))==OBD_STORE_BUSY && !stopping) {
+        uint64_t now=startup_now(&wait);
+        if(!now || now<start) return 71;
+        if(now-start>=2000) return 75;
         if(wait.poll(0,0,25)<0 && !stopping) return 71;
     }
     if(opened) return opened==OBD_STORE_BUSY?75:78;
