@@ -26,4 +26,18 @@ class NativeUpdateTest {
         assertFalse(InstrumentUpdateProtocol.finished(state.getJSONObject("remote")))
         assertTrue(InstrumentUpdateProtocol.summary(state.getJSONObject("remote")).contains("验证"))
     }
+
+    @Test fun refreshingInfoCannotReplacePinnedTaskIdentity() {
+        val state = JSONObject().put("target", "song-plus-dmi-2021").put("baseline_sha256", "1".repeat(64))
+            .put("capability", JSONObject().put("public_key_sha256", "2".repeat(64)))
+        val info = JSONObject().put("ok", true).put("update_protocol", 3).put("native_generation_available", true)
+            .put("target", "song-plus-dmi-2021").put("baseline_sha256", "1".repeat(64))
+            .put("public_key_sha256", "3".repeat(64))
+        assertTrue(runCatching { InstrumentUpdateProtocol.nativeIdentity(state, info) }.isFailure)
+        info.put("public_key_sha256", "2".repeat(64))
+        InstrumentUpdateProtocol.nativeIdentity(state, info)
+        info.put("target", "tang-plus-dmi-2021")
+        assertTrue(runCatching { InstrumentUpdateProtocol.nativeIdentity(state, info) }.isFailure)
+        assertEquals("2".repeat(64), state.getJSONObject("capability").getString("public_key_sha256"))
+    }
 }
