@@ -23,7 +23,7 @@ target_compile_definitions(native-store-host PRIVATE OBD_IO_HOST OBD_STORE_FAULT
 target_link_libraries(native-store-host PRIVATE obd_generation_core)
 add_executable(native-updater-host qnx66/update_main.c qnx66/store.c qnx66/disk.c qnx66/network.c qnx66/io.c core/update_request.c)
 target_include_directories(native-updater-host PRIVATE qnx66 core)
-target_compile_definitions(native-updater-host PRIVATE OBD_IO_HOST)
+target_compile_definitions(native-updater-host PRIVATE OBD_IO_HOST OBD_STORE_FAULT_TEST)
 target_link_libraries(native-updater-host PRIVATE obd_generation_core ${CMAKE_DL_LIBS})
 add_executable(native-supervisor-host qnx66/boot_main.c qnx66/store.c qnx66/disk.c qnx66/io.c qnx66/process_wait.c)
 target_include_directories(native-supervisor-host PRIVATE qnx66 core)

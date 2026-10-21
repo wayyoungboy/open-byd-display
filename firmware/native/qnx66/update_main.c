@@ -141,7 +141,15 @@ static int info(service *s,obd_io *io,int fd,obd_store *store) {
     return send_line(io,fd,line,n);
 }
 static int can_install(service *s,obd_store *store) {
-    return s->task.phase==READY && s->task.enabled && !store->state.candidate.present;
+    if(s->task.phase!=READY || !s->task.enabled || store->state.candidate.present) return 0;
+    obd_trial_slot slot; uint8_t profile[64];
+    if(obd_store_inspect(store,s->task.package,&slot,profile)) return 0;
+    if(store->state.highwater_present) {
+        int newer=0;
+        for(unsigned i=0;i<3;i++) if(slot.version[i]!=store->state.highwater[i]) { newer=slot.version[i]>store->state.highwater[i]; break; }
+        if(!newer) return 0;
+    }
+    return 1;
 }
 static int upload(service *s,const obd_update_request *r,obd_io *io,int fd,obd_store *store) {
     uint8_t expected[32],baseline[32];
@@ -254,17 +262,31 @@ int main(int argc,char **argv) {
        memcmp(actual,s.baseline,32) || obd_baseline_platform_check(0)) return 78;
 #endif
     (void)umask(077);
-    obd_store store; if(open_store(&s,&store)) return 78;
+    if(signal(2,stop)==(void (*)(int))-1 || signal(15,stop)==(void (*)(int))-1 || signal(13,stop)==(void (*)(int))-1) return 71;
+    obd_io_api wait; obd_io_platform(&wait);
+    obd_store store; int opened;
+    unsigned long long deadline=wait.now()+2000;
+    while((opened=open_store(&s,&store))==OBD_STORE_BUSY && !stopping && wait.now()<deadline) {
+        if(wait.poll(0,0,25)<0 && !stopping) return 71;
+    }
+    if(opened) return opened==OBD_STORE_BUSY?75:78;
     memcpy(s.identity,store.identity,32); obd_store_close(&store);
     int lock=lifetime_lock(s.root); if(lock<0) return 75;
     if(load(&s)) { close(lock); return 78; }
-    if(signal(2,stop)==(void (*)(int))-1 || signal(15,stop)==(void (*)(int))-1 || signal(13,stop)==(void (*)(int))-1) { close(lock); return 71; }
-    obd_video_listener listener; if(obd_video_listen(argv[12],port,&listener)) { close(lock); return 71; }
     while(!stopping && !s.poisoned) {
-        int fd=obd_video_next(&listener,&stopping);
-        if(fd==OBD_IO_TIMEOUT) continue;
-        if(fd<0) break;
-        (void)connection(&s,fd); close(fd);
+        obd_video_listener listener;
+        if(obd_video_listen(argv[12],port,&listener)) {
+            /* USB/NCM can appear after boot. No role/address changes here. */
+            if(wait.poll(0,0,1000)<0 && !stopping) { close(lock); return 71; }
+            continue;
+        }
+        while(!stopping && !s.poisoned) {
+            int fd=obd_video_next(&listener,&stopping);
+            if(fd==OBD_IO_TIMEOUT) continue;
+            if(fd<0) break;
+            (void)connection(&s,fd); close(fd);
+        }
+        obd_video_listener_close(&listener);
     }
-    obd_video_listener_close(&listener); close(lock); return s.poisoned?78:0;
+    close(lock); return s.poisoned?78:0;
 }

@@ -100,7 +100,9 @@ class SupervisorTests(unittest.TestCase):
 
     def start(self, watch=False):
         p = subprocess.Popen(
-            self.args(SUPERVISOR) + (["--watch"] if watch else []), stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            self.args(SUPERVISOR) + (["--watch"] if watch else []),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
         )
         self.processes.append(p)
         return p
@@ -111,8 +113,10 @@ class SupervisorTests(unittest.TestCase):
             self.root = self.home / (target + "-watch")
             self.store("init")
             p = self.start(watch=True)
-            time.sleep(.15)
-            self.assertIsNone(p.poll(), "watcher must remain available before first install")
+            time.sleep(0.15)
+            self.assertIsNone(
+                p.poll(), "watcher must remain available before first install"
+            )
             self.stage(model=model)
             self.wait_state("current", "b" * 32)
             self.stage(model=model, ident="c" * 32, version="1.0.1")
