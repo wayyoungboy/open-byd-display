@@ -98,12 +98,31 @@ class SupervisorTests(unittest.TestCase):
         self.store("stage", str(p))
         self.store("activate", ident, "a" * 32)
 
-    def start(self):
+    def start(self, watch=False):
         p = subprocess.Popen(
-            self.args(SUPERVISOR), stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            self.args(SUPERVISOR) + (["--watch"] if watch else []), stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
         self.processes.append(p)
         return p
+
+    def test_watcher_installs_updates_from_idle_then_replaces_and_rolls_back(self):
+        for model, target in [(1, "song-plus-dmi-2021"), (2, "tang-plus-dmi-2021")]:
+            self.target = target
+            self.root = self.home / (target + "-watch")
+            self.store("init")
+            p = self.start(watch=True)
+            time.sleep(.15)
+            self.assertIsNone(p.poll(), "watcher must remain available before first install")
+            self.stage(model=model)
+            self.wait_state("current", "b" * 32)
+            self.stage(model=model, ident="c" * 32, version="1.0.1")
+            self.wait_state("current", "c" * 32)
+            self.stage(healthy=False, model=model, ident="d" * 32, version="1.0.2")
+            self.wait_state("candidate", "", timeout=8)
+            self.assertEqual("c" * 32, self.store("status")["current"])
+            self.assertIsNone(p.poll())
+            p.terminate()
+            self.assertEqual(0, p.wait(timeout=6))
 
     def wait_state(self, key, value, timeout=7):
         end = time.monotonic() + timeout
