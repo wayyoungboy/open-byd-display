@@ -13,11 +13,12 @@ import org.json.JSONObject
 /** Local container preflight. Only the instrument can establish target compatibility/signature trust. */
 object InstrumentUpdatePackage {
     private val required = setOf("app.sv", "os.sv", "mcu.sv", "kzbVersion", "RcAppVersion", "version_svp")
-    data class Checked(val kind: InstrumentUpdateProtocol.Kind, val bytes: Long, val sha256: String)
+    data class Checked(val kind: InstrumentUpdateProtocol.Kind, val bytes: Long, val sha256: String,
+                       val native: NativeGenerationPackage.Metadata? = null)
 
     fun kind(name: String): InstrumentUpdateProtocol.Kind = InstrumentUpdateProtocol.Kind.entries.firstOrNull {
         name.lowercase(Locale.ROOT).endsWith(it.suffix)
-    } ?: error("请选择 .zip 固件包或 .fup 服务包；RAR 不能直接上传")
+    } ?: error("请选择 .obg 自研仪表包、.zip 固件包或 .fup 服务包；RAR 不能直接上传")
 
     fun digest(file: File): String = file.inputStream().use { stream ->
         val hash = MessageDigest.getInstance("SHA-256")
@@ -29,6 +30,10 @@ object InstrumentUpdatePackage {
     fun inspect(file: File, name: String): Checked {
         val kind = kind(name)
         require(file.isFile && file.length() in 1..kind.maxBytes) { "更新包为空或超过限制" }
+        if (kind == InstrumentUpdateProtocol.Kind.NATIVE) {
+            val native = NativeGenerationPackage.inspect(file)
+            return Checked(kind, file.length(), native.sha256, native)
+        }
         if (kind == InstrumentUpdateProtocol.Kind.FIRMWARE) inspectZip(file) else inspectFup(file)
         // FUP signatures stay with the receiving instrument; no local false claim of authorization.
         return Checked(kind, file.length(), digest(file))

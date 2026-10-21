@@ -11,7 +11,7 @@ object InstrumentUpdateStore {
         val state = JSONObject(raw)
         check(state.optInt("state_schema") == 1)
         if (state.has("update_id")) check(state.getString("update_id").matches(Regex("[0-9a-f]{32}")) &&
-            state.optString("host").isNotBlank() && state.optString("kind") in setOf("firmware", "components"))
+            state.optString("host").isNotBlank() && state.optString("kind") in setOf("firmware", "components", "native_generation"))
         state
     }.getOrElse { JSONObject().put("recovery_blocked", true).put("message", "本机任务记录损坏，已阻止新更新。请保留数据并恢复任务记录，勿重复安装。") }
 
