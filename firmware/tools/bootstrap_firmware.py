@@ -253,9 +253,10 @@ def patch_os(data, target):
 def platform_files(directory, target, source):
     result = build_files(directory, target, source)
     report = json.loads(result["build-report.json"])
-    names = {f"obd-qnx66-{kind}-{target}.elf" for kind in ("install", "supervisor")} | {
-        "libopenbyddisplay-platform.so.0"
-    }
+    names = {
+        f"obd-qnx66-{kind}-{target}.elf"
+        for kind in ("install", "supervisor", "updater")
+    } | {"libopenbyddisplay-platform.so.0"}
     require(
         report.get("native_platform_built") is True
         and report.get("host_fault_injection_compiled") is False
@@ -290,7 +291,7 @@ def compose(original, artifacts, target, profile, config, key, source):
         },
         target,
         profile["original_zip_sha256"],
-        "0.2.0",
+        "0.3.0",
         key,
         ident,
     )
@@ -309,17 +310,26 @@ def compose(original, artifacts, target, profile, config, key, source):
         f"--root {root} --key {home}/update-public.bin --key-sha256 {sha(public)} "
         f"--target {target} --baseline {profile['original_zip_sha256']}"
     )
+    receiver_environment = ""
+    if "network_runtime_id" in config:
+        receiver_environment = f"SOCK=/fs/tmpfs/OpenBYDDisplay/{target}/{config['network_runtime_id']}/net "
     files["boot.sh"] = (
         "#!/bin/sh\numask 077\nunset SOCK || exit 65\n"
         f"[ -d {root} ] && [ ! -L {root} ] || exit 0\n"
-        f"exec {home}/obd-qnx66-supervisor-{target}.elf {common}\n"
+        f"{receiver_environment}{home}/obd-qnx66-updater-{target}.elf {common} --address {config['address']} --port 47793 &\n"
+        f"exec {home}/obd-qnx66-supervisor-{target}.elf {common} --watch\n"
     ).encode()
     files["prepare-store.sh"] = (
         "#!/bin/sh\n# Explicit operator installation only; never run from boot.sh.\n"
         '[ "$#" -eq 0 ] || exit 64\numask 077\nunset SOCK || exit 65\n'
         f"{home}/obd-qnx66-install-{target}.elf {common} init || exit $?\n"
         f"{home}/obd-qnx66-install-{target}.elf {common} stage {home}/initial-generation.obg || exit $?\n"
-        f"exec {home}/obd-qnx66-install-{target}.elf {common} activate {ident} {nonce}\n"
+        + (
+            f"{home}/obd-qnx66-install-{target}.elf {common} activate {ident} {nonce} || exit $?\n"
+            if config["enabled"]
+            else "# Disabled initial profile is staged only; OEM remains active.\n"
+        )
+        + f"/proc/boot/ksh {home}/boot.sh </dev/null >/dev/null 2>&1 &\n"
     ).encode()
     files["profile.json"] = encoded(
         {
@@ -360,6 +370,8 @@ def compose(original, artifacts, target, profile, config, key, source):
         "user_reported_original_vehicle_tested": True,
         "native_signed_store_implemented": True,
         "native_supervisor_implemented": True,
+        "native_update_receiver_implemented": True,
+        "native_update_port": 47793,
         "auto_provision": False,
         "usb_driver_adapter_integrated": False,
         "oem_theme_center_adapter_integrated": False,

@@ -233,7 +233,7 @@ class MainActivity : Activity() {
             if (cast.has("host")) append("\nhost=").append(cast.optString("host"))
         }
         val casting = CastSessionStore.busy
-        findViewById<Button>(R.id.castStart).isEnabled = !casting && !busy && !usbBlocked && InstrumentUpdateStore.canReplace(state)
+        findViewById<Button>(R.id.castStart).isEnabled = !casting && !busy && !usbBlocked && InstrumentUpdateStore.canCast(state, findViewById<EditText>(R.id.updateHost).text.toString().trim())
         listOf(R.id.castOptions, R.id.castProbe).forEach { findViewById<Button>(it).isEnabled = !casting && !busy }
         listOf(R.id.castFullWidth, R.id.castSoftEdge, R.id.castLyrics, R.id.castNav, R.id.castAutoReconnect).forEach { findViewById<Switch>(it).isEnabled = !casting }
         findViewById<Button>(R.id.castStop).isEnabled = casting
@@ -242,6 +242,8 @@ class MainActivity : Activity() {
         findViewById<TextView>(R.id.updateStatus).text = buildString {
             append(state.optString("message", "先选择与当前仪表匹配的更新包"))
             if (state.has("name")) append("\n\n包：").append(state.optString("name")).append("\n大小：").append(state.optLong("bytes") / 1024).append(" KiB")
+            if (state.has("target")) append("\n车型：").append(if (state.optString("target").startsWith("song-")) "21 款宋 PLUS DM-i" else "21 款唐 PLUS DM-i")
+            if (state.has("native_version")) append("\n自研服务版本：").append(state.optString("native_version"))
             if (state.has("sha256")) append("\nSHA256：").append(state.optString("sha256"))
             if (state.has("update_id")) append("\n任务：").append(state.optString("update_id"))
             if (busy) append("\n正在处理，请保持连接")
@@ -252,7 +254,7 @@ class MainActivity : Activity() {
         findViewById<Button>(R.id.updateRefresh).isEnabled = !busy && state.has("update_id")
         findViewById<Button>(R.id.updateApply).isEnabled = !busy && !casting && !usbBlocked && !cleanupBlocked && !state.optBoolean("apply_attempted") &&
             findViewById<CheckBox>(R.id.updateParked).isChecked && remote != null && InstrumentUpdateProtocol.canApply(remote)
-        findViewById<Button>(R.id.updateCancel).isEnabled = state.has("update_id") && remote?.optString("stage") !in setOf("installing", "handed_off", "applied", "recovery_required")
+        findViewById<Button>(R.id.updateCancel).isEnabled = !casting && state.has("update_id") && remote?.optString("stage") !in setOf("installing", "applying", "awaiting_confirmation", "handed_off", "applied", "recovery_required")
     }
 
     private fun showAdbHelp() {

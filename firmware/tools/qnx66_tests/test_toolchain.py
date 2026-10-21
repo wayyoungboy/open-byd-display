@@ -37,6 +37,7 @@ class ToolchainTest(unittest.TestCase):
             "int fixture_bss;\n"
             "void *memcpy(void*d,const void*s,unsigned n){(void)s;(void)n;return d;}\n"
             "void *memset(void*d,int x,unsigned n){(void)x;(void)n;return d;}\n"
+            "char *getenv(const char*n){(void)n;return 0;}\n"
             "int strcmp(const char*a,const char*b){(void)a;(void)b;return 0;}\n"
             "int snprintf(char*a,unsigned n,const char*f,...){(void)a;(void)n;(void)f;return 0;}\n"
             "void *dlopen(const char*a,int f){(void)a;(void)f;return 0;}\n"
@@ -274,7 +275,7 @@ class ToolchainTest(unittest.TestCase):
                 self.lld,
                 platform=True,
             )
-            self.assertEqual(3, len(report["platform_artifacts"]))
+            self.assertEqual(4, len(report["platform_artifacts"]))
             self.assertFalse(report["host_fault_injection_compiled"])
             raw = generation_build(
                 {

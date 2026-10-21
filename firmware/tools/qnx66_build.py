@@ -269,6 +269,8 @@ def build(libc, expected_digest, output, target, clang, lld, platform=False):
                     "hmi_txn": native / "core/hmi_txn.c",
                     "usb_plan": native / "qnx66/usb_plan.c",
                     "process_wait": native / "qnx66/process_wait.c",
+                    "update_request": native / "core/update_request.c",
+                    "update_main": native / "qnx66/update_main.c",
                 }
             )
         for name, source in sources.items():
@@ -443,6 +445,11 @@ def build(libc, expected_digest, output, target, clang, lld, platform=False):
             for kind, entry, extra in [
                 ("install", "install_main", []),
                 ("supervisor", "boot_main", [objects["io"], objects["process_wait"]]),
+                (
+                    "updater",
+                    "update_main",
+                    [objects["io"], objects["network"], objects["update_request"]],
+                ),
             ]:
                 name = f"obd-qnx66-{kind}-{target}.elf"
                 destination = stage / name

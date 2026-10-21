@@ -30,7 +30,9 @@ extern int *__get_errno_ptr(void);
 extern void free(void *);
 enum { O_RDWR=2,O_CREAT=0x100,O_NONBLOCK=0x80,LOCK_EX=2,LOCK_NB=4 };
 #endif
+#ifndef OBD_IO_HOST
 extern int snprintf(char *,size_t,const char *,...);
+#endif
 static int id_valid(const char *id) { uint8_t parsed[16]; return id && !obd_generation_unhex(parsed,id,16); }
 static int target_valid(const char *s) {
     return s && (!strcmp(s,"song-plus-dmi-2021") || !strcmp(s,"tang-plus-dmi-2021"));
@@ -210,6 +212,15 @@ int obd_store_activate(obd_store *s,const char *id,const uint8_t nonce[16]) {
     obd_trial_slot slot=g.slot; free(raw);
     const obd_trial_api api={s,obd_store_verify_slot,commit_state,0};
     return obd_trial_activate(&s->state,&slot,nonce,&api);
+}
+int obd_store_inspect(obd_store *s,const char *id,obd_trial_slot *slot,uint8_t profile[64]) {
+    char path[384]; uint8_t *raw=0; obd_generation g;
+    if(!s || !slot || !profile || gen_path(path,s,"gen",id) || verify_directory(s,path,0,&g,&raw)) return -1;
+    int result=-1;
+    for(unsigned i=0;i<g.count;i++) if(!strcmp(g.files[i].name,"profile.dat") && g.files[i].bytes==64) {
+        *slot=g.slot; memcpy(profile,g.payload+g.files[i].offset,64); result=0; break;
+    }
+    free(raw); return result;
 }
 int obd_store_select(obd_store *s,obd_trial_slot *slot,char path[384]) {
     if(!s || s->poisoned || !slot || !path) return -1;

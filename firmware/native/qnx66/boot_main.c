@@ -34,7 +34,9 @@ enum { O_RDWR=2,O_CREAT=0x100,O_NONBLOCK=0x80,LOCK_EX=2,LOCK_NB=4,F_DUPFD=0 };
 #include "sha256.h"
 #include "baseline_platform.h"
 #include <string.h>
+#ifndef OBD_IO_HOST
 extern int snprintf(char *,size_t,const char *,...);
+#endif
 static volatile int stop_requested;
 static void stop(int sig) { if(sig!=13) stop_requested=1; }
 static unsigned u32(const uint8_t *p) { return (unsigned)p[0]|(unsigned)p[1]<<8|(unsigned)p[2]<<16|(unsigned)p[3]<<24; }
@@ -141,7 +143,7 @@ static int reap(child_state *c) {
     }
     return -1;
 }
-static int supervise(const char *root,const char *target,const uint8_t baseline[32],const uint8_t key[32]) {
+static int supervise(const char *root,const char *target,const uint8_t baseline[32],const uint8_t key[32],int watch) {
     /* Different lock from the short store transaction, so stage/status remain
      * available while a confirmed generation is serving. */
     char path[384];
@@ -153,18 +155,25 @@ static int supervise(const char *root,const char *target,const uint8_t baseline[
     if(obd_disk_metadata(0,lock,&a) || obd_disk_private(path,0,0600,&b) || a.inode!=b.inode || a.device!=b.device || a.size || flock(lock,LOCK_EX|LOCK_NB)) { close(lock); return 75; }
     if(obd_disk_join(path,root,"supervisor.uncertain") || obd_disk_exists(path)!=0) { close(lock); return 78; }
     int result=0;
-    for(unsigned attempt=0;attempt<2 && !stop_requested;attempt++) {
+    for(unsigned attempt=0;(watch || attempt<2) && !stop_requested;attempt++) {
         obd_store s; obd_trial_slot selected; char directory[384]; uint8_t raw[64],nonce[16]; obd_service_profile profile;
         if(open_store(&s,root,target,baseline,key)) { result=78; break; }
         int choice=obd_store_select(&s,&selected,directory);
         memcpy(nonce,s.state.nonce,16);
         int invalid=choice<0 || (choice!=OBD_TRIAL_OEM && (obd_store_current_profile(&s,&selected,raw) || obd_profile_decode(&profile,raw,target) || !profile.enabled));
         obd_store_close(&s);
-        if(choice==OBD_TRIAL_OEM) break; /* Original SLM is already independent. */
+        if(choice==OBD_TRIAL_OEM) {
+            if(!watch) break; /* Original SLM is already independent. */
+            obd_io_api io; obd_io_platform(&io);
+            if(io.poll(0,0,250)<0 && !stop_requested) { result=71; break; }
+            continue;
+        }
         if(invalid) { result=78; if(choice==OBD_TRIAL_CANDIDATE) continue; break; }
+        if(watch && choice==OBD_TRIAL_CURRENT) result=0;
         child_state child; memset(&child,0,sizeof(child)); child.lease=child.health=-1; obd_io_platform(&child.io);
         uint64_t started=child.io.now(),pulse=0;
-        int confirmed=choice==OBD_TRIAL_CURRENT,failed=0;
+        int confirmed=choice==OBD_TRIAL_CURRENT,failed=0,reload=0;
+        uint64_t checked_update=0;
 #ifdef OBD_SUPERVISOR_TEST
         unsigned trial_ms=2500;
 #else
@@ -196,16 +205,28 @@ static int supervise(const char *root,const char *target,const uint8_t baseline[
                     int rc=collect(&child)?OBD_TRIAL_HEALTH:obd_store_confirm(&s,selected.package_id,nonce,child_health,&child);
                     obd_store_close(&s);
                     if(rc && rc!=OBD_TRIAL_HEALTH) { failed=1; break; }
-                    if(!rc) confirmed=1;
+                    if(!rc) { confirmed=1; if(watch) result=0; }
                 }
             }
             if(!confirmed && now-started>=trial_ms) { failed=1; break; }
+            if(watch && confirmed && (!checked_update || now-checked_update>=250)) {
+                checked_update=now;
+                int opened=obd_store_open(&s,root,target,baseline,key);
+                if(opened && opened!=OBD_STORE_BUSY) { failed=1; break; }
+                if(!opened) {
+                    reload=s.state.candidate.present && !s.state.attempted &&
+                        strcmp(s.state.candidate.package_id,selected.package_id);
+                    obd_store_close(&s);
+                    if(reload) break;
+                }
+            }
             if(child.io.poll(0,0,50)<0 && !stop_requested) { failed=1; break; }
         }
         int cleaned=reap(&child);
         if(cleaned) { result=75; break; } /* Keep the already durable barrier. */
         if(obd_disk_join(path,root,"supervisor.uncertain") || obd_disk_private(path,0,0600,0) || unlink(path) || obd_disk_sync(root)) { result=75; break; }
         if(stop_requested) break;
+        if(reload) { result=0; continue; } /* Old owned child is reaped before select/exec. */
         if(failed) result=70;
         if(confirmed || choice!=OBD_TRIAL_CANDIDATE) break;
         /* Next select durably rolls an unconfirmed trial back before handing
@@ -214,7 +235,7 @@ static int supervise(const char *root,const char *target,const uint8_t baseline[
     close(lock); return result;
 }
 int main(int argc,char **argv) {
-    if(argc!=11 || strcmp(argv[1],"--root") || strcmp(argv[3],"--key") || strcmp(argv[5],"--key-sha256") ||
+    if((argc!=11 && argc!=12) || (argc==12 && strcmp(argv[11],"--watch")) || strcmp(argv[1],"--root") || strcmp(argv[3],"--key") || strcmp(argv[5],"--key-sha256") ||
        strcmp(argv[7],"--target") || strcmp(argv[9],"--baseline")) return 64;
     uint8_t baseline[32],pin[32],actual[32],*key=0; size_t bytes=0;
     if(obd_generation_unhex(baseline,argv[10],32) || obd_generation_unhex(pin,argv[6],32) ||
@@ -227,5 +248,5 @@ int main(int argc,char **argv) {
        memcmp(compiled,baseline,32) || obd_baseline_platform_check(0)) { free(key); return 78; }
 #endif
     if(signal(2,stop)==(void (*)(int))-1 || signal(15,stop)==(void (*)(int))-1 || signal(13,stop)==(void (*)(int))-1) { free(key); return 71; }
-    int result=supervise(argv[2],argv[8],baseline,key); free(key); return result;
+    int result=supervise(argv[2],argv[8],baseline,key,argc==12); free(key); return result;
 }

@@ -54,7 +54,8 @@ class InstrumentUpdateClient(
 
     fun upload(file: File, id: String, kind: InstrumentUpdateProtocol.Kind, progress: (Long, Long) -> Unit): JSONObject {
         val bytes = file.length()
-        val declaration = InstrumentUpdateProtocol.declaration(id, kind, bytes)
+        val native = if (kind == InstrumentUpdateProtocol.Kind.NATIVE) NativeGenerationPackage.inspect(file) else null
+        val declaration = InstrumentUpdateProtocol.declaration(id, kind, bytes, native)
         val socket = connect()
         val lastWrite = AtomicLong(System.nanoTime())
         val watchdog = Executors.newSingleThreadScheduledExecutor()
