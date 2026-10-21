@@ -1,5 +1,6 @@
 """Real native TCP/store integration on loopback; synthetic services never execute."""
 import hashlib
+import fcntl
 import json
 import os
 from pathlib import Path
@@ -169,6 +170,28 @@ class NativeUpdateTests(unittest.TestCase):
             except OSError:
                 time.sleep(.05)
         self.fail("receiver did not recover after bind became available")
+
+    def test_startup_waits_for_short_store_transaction(self):
+        self.root = self.home / "store-startup-busy"
+        self.store("init")
+        self.store("status")
+        with (self.root / "store.lock").open("rb") as held:
+            fcntl.flock(held, fcntl.LOCK_EX)
+            with socket.socket() as probe:
+                probe.bind(("127.0.0.1", 0))
+                self.port = probe.getsockname()[1]
+            self.process = subprocess.Popen(
+                [SERVER, *self.common(), "--address", "127.0.0.1", "--port", str(self.port)],
+                stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+            time.sleep(.4)
+            self.assertIsNone(self.process.poll(), "a short startup transaction must not kill the receiver")
+        for _ in range(100):
+            try:
+                self.assertEqual(3, self.request(dict(op="update.info"))["update_protocol"])
+                return
+            except OSError:
+                time.sleep(.02)
+        self.fail("receiver did not recover from the startup transaction")
 
     def test_installed_version_cannot_be_offered_for_activation_again(self):
         self.start()
