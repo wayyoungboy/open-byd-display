@@ -40,4 +40,41 @@ class NativeUpdateTest {
         assertTrue(runCatching { InstrumentUpdateProtocol.nativeIdentity(state, info) }.isFailure)
         assertEquals("2".repeat(64), state.getJSONObject("capability").getString("public_key_sha256"))
     }
+
+    @Test fun nativeTrialAllowsVideoForHealthButNeverAnotherMutation() {
+        val id = "a".repeat(32)
+        val remote = JSONObject().put("ok", true).put("kind", "native_generation").put("update_id", id)
+            .put("stage", "awaiting_confirmation").put("applied", false)
+        val state = JSONObject().put("kind", "native_generation").put("host", "192.168.77.1")
+            .put("update_id", id).put("apply_attempted", true).put("remote", remote)
+        assertTrue(InstrumentUpdateStore.awaitingNative(state, "192.168.77.1"))
+        assertTrue(InstrumentUpdateStore.canCast(state, "192.168.77.1"))
+        assertFalse(InstrumentUpdateStore.canReplace(state))
+        assertFalse(InstrumentUpdateStore.canCast(state, "127.0.0.1"))
+        for (stage in listOf("ready", "applying", "recovery_required", "failed")) {
+            remote.put("stage", stage)
+            assertFalse(InstrumentUpdateStore.canCast(state, "192.168.77.1"))
+        }
+        remote.put("stage", "awaiting_confirmation").put("update_id", "b".repeat(32))
+        assertFalse(InstrumentUpdateStore.canCast(state, "192.168.77.1"))
+        remote.put("update_id", id); state.put("recovery_blocked", true)
+        assertFalse(InstrumentUpdateStore.canCast(state, "192.168.77.1"))
+    }
+
+    @Test fun trialStatusReadCanCoexistWithCastButNeverReleaseItsOwnership() {
+        try {
+            assertTrue(InstrumentOperation.acquire("cast"))
+            assertTrue(InstrumentOperation.acquireUpdateStatus())
+            assertFalse(InstrumentOperation.acquire("update"))
+            assertFalse(InstrumentOperation.acquire("usb"))
+            assertFalse(InstrumentOperation.acquireUpdateStatus())
+            InstrumentOperation.releaseUpdateStatus()
+            assertFalse(InstrumentOperation.acquire("update"))
+            InstrumentOperation.release("cast")
+            assertTrue(InstrumentOperation.acquireUpdateStatus())
+            assertFalse(InstrumentOperation.acquire("cast"))
+        } finally {
+            InstrumentOperation.releaseUpdateStatus(); InstrumentOperation.release("cast")
+        }
+    }
 }
