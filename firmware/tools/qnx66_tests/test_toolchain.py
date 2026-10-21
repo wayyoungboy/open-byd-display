@@ -274,7 +274,7 @@ class ToolchainTest(unittest.TestCase):
                 self.lld,
                 platform=True,
             )
-            self.assertEqual(3, len(report["platform_artifacts"]))
+            self.assertEqual(4, len(report["platform_artifacts"]))
             self.assertFalse(report["host_fault_injection_compiled"])
             raw = generation_build(
                 {

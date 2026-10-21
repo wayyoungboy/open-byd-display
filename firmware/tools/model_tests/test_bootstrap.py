@@ -135,6 +135,7 @@ class BootstrapTests(unittest.TestCase):
         artifacts |= {
             "obd-qnx66-install-song-plus-dmi-2021.elf": b"synthetic installer",
             "obd-qnx66-supervisor-song-plus-dmi-2021.elf": b"synthetic supervisor",
+            "obd-qnx66-updater-song-plus-dmi-2021.elf": b"synthetic updater",
         }
         return original, profile, artifacts
 
@@ -158,6 +159,10 @@ class BootstrapTests(unittest.TestCase):
                 subprocess.run(
                     ["sh", "-n"], input=data, check=True, capture_output=True, timeout=5
                 )
+                if name == "boot.sh":
+                    self.assertIn(b"obd-qnx66-updater-song-plus-dmi-2021.elf", data)
+                    self.assertIn(b"--port 47793", data)
+                    self.assertIn(b"--watch", data)
             self.assertEqual(
                 package,
                 archive.extractfile(
