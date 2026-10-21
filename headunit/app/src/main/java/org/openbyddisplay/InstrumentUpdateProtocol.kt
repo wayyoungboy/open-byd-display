@@ -3,7 +3,7 @@ package org.openbyddisplay
 import org.json.JSONObject
 import java.util.UUID
 
-/** Protocol 2 update jobs are distinct from the small theme/mask upload API. */
+/** Legacy protocol 2 and native-generation protocol 3 have separate endpoints. */
 object InstrumentUpdateProtocol {
     const val PORT = 47785
     const val FIRMWARE_MAX = 536870912L
@@ -44,6 +44,13 @@ object InstrumentUpdateProtocol {
     }
 
     fun id(): String = UUID.randomUUID().toString().replace("-", "")
+    fun nativeIdentity(state: JSONObject, info: JSONObject) {
+        val capability = capability(info)
+        check(capability.native && capability.target == state.getString("target") &&
+            capability.baseline == state.getString("baseline_sha256")) { "仪表车型或原始基底与更新包不匹配" }
+        val pin = state.optJSONObject("capability")?.optString("public_key_sha256").orEmpty()
+        check(pin.isEmpty() || pin == capability.keySha256) { "仪表信任公钥已变化，请保留任务记录" }
+    }
     fun request(op: String, id: String? = null): JSONObject {
         require(op in setOf("update.info", "update.status", "update.upload", "update.apply", "update.cancel"))
         return JSONObject().put("op", op).apply {

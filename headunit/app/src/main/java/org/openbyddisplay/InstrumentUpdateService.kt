@@ -59,6 +59,7 @@ class InstrumentUpdateService : Service() {
                     "info" -> {
                         val reply = remote(host, endpoint(state)) { it.command("update.info") }
                         InstrumentUpdateProtocol.capability(reply)
+                        if (state.has("target")) nativeIdentity(state, reply)
                         save(state.put("capability", reply).put("message", "已读取仪表更新能力"))
                     }
                     "upload" -> upload(state, host)
@@ -91,11 +92,7 @@ class InstrumentUpdateService : Service() {
 
     private fun nativeIdentity(state: JSONObject, info: JSONObject) {
         if (endpoint(state) != InstrumentUpdateProtocol.Kind.NATIVE) return
-        val capability = InstrumentUpdateProtocol.capability(info)
-        check(capability.native && capability.target == state.getString("target") &&
-            capability.baseline == state.getString("baseline_sha256")) { "仪表车型或原始基底与更新包不匹配" }
-        val pin = state.optJSONObject("capability")?.optString("public_key_sha256").orEmpty()
-        check(pin.isEmpty() || pin == capability.keySha256) { "仪表信任公钥已变化，请保留任务记录" }
+        InstrumentUpdateProtocol.nativeIdentity(state, info)
     }
 
     private fun checkedStatus(state: JSONObject, reply: JSONObject): JSONObject {
