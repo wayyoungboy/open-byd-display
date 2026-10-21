@@ -21,6 +21,10 @@ add_executable(native-store-host qnx66/install_main.c qnx66/store.c qnx66/disk.c
 target_include_directories(native-store-host PRIVATE qnx66 core)
 target_compile_definitions(native-store-host PRIVATE OBD_IO_HOST OBD_STORE_FAULT_TEST)
 target_link_libraries(native-store-host PRIVATE obd_generation_core)
+add_executable(native-updater-host qnx66/update_main.c qnx66/store.c qnx66/disk.c qnx66/network.c qnx66/io.c core/update_request.c)
+target_include_directories(native-updater-host PRIVATE qnx66 core)
+target_compile_definitions(native-updater-host PRIVATE OBD_IO_HOST)
+target_link_libraries(native-updater-host PRIVATE obd_generation_core ${CMAKE_DL_LIBS})
 add_executable(native-supervisor-host qnx66/boot_main.c qnx66/store.c qnx66/disk.c qnx66/io.c qnx66/process_wait.c)
 target_include_directories(native-supervisor-host PRIVATE qnx66 core)
 target_compile_definitions(native-supervisor-host PRIVATE OBD_IO_HOST OBD_SUPERVISOR_TEST)
@@ -81,6 +85,7 @@ target_link_libraries(video-core-tests PRIVATE obd_video_core)
 add_test(NAME video-core COMMAND video-core-tests)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 add_test(NAME native-signed-store COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_native_store.py $<TARGET_FILE:native-store-host>)
+add_test(NAME native-update-transport COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_native_update.py $<TARGET_FILE:native-updater-host> $<TARGET_FILE:native-store-host>)
 add_test(NAME native-supervisor COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_supervisor.py
   $<TARGET_FILE:native-store-host> $<TARGET_FILE:native-supervisor-host>
   $<TARGET_FILE:supervisor-child-healthy> $<TARGET_FILE:supervisor-child-unhealthy>)

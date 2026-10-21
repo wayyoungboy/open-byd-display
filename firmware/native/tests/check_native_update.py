@@ -52,7 +52,7 @@ class NativeUpdateTests(unittest.TestCase):
     def store(self, *args):
         result = subprocess.run([STORE, *self.common(), *args], capture_output=True, timeout=10)
         self.assertEqual(0, result.returncode, result.stderr.decode())
-        return json.loads(result.stdout)
+        return json.loads(result.stdout) if result.stdout else None
 
     def start(self, target=None, restart=False):
         if self.process:

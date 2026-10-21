@@ -211,6 +211,15 @@ int obd_store_activate(obd_store *s,const char *id,const uint8_t nonce[16]) {
     const obd_trial_api api={s,obd_store_verify_slot,commit_state,0};
     return obd_trial_activate(&s->state,&slot,nonce,&api);
 }
+int obd_store_inspect(obd_store *s,const char *id,obd_trial_slot *slot,uint8_t profile[64]) {
+    char path[384]; uint8_t *raw=0; obd_generation g;
+    if(!s || !slot || !profile || gen_path(path,s,"gen",id) || verify_directory(s,path,0,&g,&raw)) return -1;
+    int result=-1;
+    for(unsigned i=0;i<g.count;i++) if(!strcmp(g.files[i].name,"profile.dat") && g.files[i].bytes==64) {
+        *slot=g.slot; memcpy(profile,g.payload+g.files[i].offset,64); result=0; break;
+    }
+    free(raw); return result;
+}
 int obd_store_select(obd_store *s,obd_trial_slot *slot,char path[384]) {
     if(!s || s->poisoned || !slot || !path) return -1;
     path[0]=0; const obd_trial_api api={s,obd_store_verify_slot,commit_state,0};
