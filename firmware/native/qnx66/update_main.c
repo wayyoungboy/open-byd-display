@@ -48,6 +48,7 @@ typedef struct {
     job task; int poisoned;
 } service;
 static volatile int stopping;
+static size_t text_size(const char *s) { size_t n=0; while(s[n]) n++; return n; }
 static void stop(int sig) { if(sig!=13) stopping=1; }
 static void hash(const uint8_t *data,size_t n,uint8_t out[32]) {
     obd_sha256 h; obd_sha256_init(&h); obd_sha256_update(&h,data,n); obd_sha256_final(&h,out);
@@ -69,7 +70,7 @@ static int save(service *s) {
     if(obd_generation_unhex(raw+16,s->task.id,16)) return -1;
     if(s->task.package[0] && obd_generation_unhex(raw+32,s->task.package,16)) return -1;
     memcpy(raw+48,s->task.digest,32); put32(raw+80,s->task.total); put32(raw+84,s->task.received); put32(raw+88,s->task.enabled);
-    memcpy(raw+96,s->baseline,32); memcpy(raw+128,s->target,strlen(s->target)); memcpy(raw+160,s->identity,32);
+    memcpy(raw+96,s->baseline,32); memcpy(raw+128,s->target,text_size(s->target)); memcpy(raw+160,s->identity,32);
     hash(raw,224,raw+224);
     s->poisoned=1;
     if(obd_disk_create(next,raw,sizeof(raw),0600)) return -1;
@@ -86,7 +87,7 @@ static int load(service *s) {
     if(exists<0 || temporary<0 || (!exists && temporary)) return -1;
     if(!exists) return 0;
     if(obd_disk_read(file,&raw,&n,256,1) || n!=256) { free(raw); return -1; }
-    hash(raw,224,actual); uint8_t canonical[32]={0}; memcpy(canonical,s->target,strlen(s->target));
+    hash(raw,224,actual); uint8_t canonical[32]={0}; memcpy(canonical,s->target,text_size(s->target));
     int bad=memcmp(raw,"OBDJOB1\n",8) || memcmp(actual,raw+224,32) || memcmp(raw+96,s->baseline,32) ||
         memcmp(raw+128,canonical,32) || memcmp(raw+160,s->identity,32) || !nonzero(raw+16,16) ||
         !nonzero(raw+48,32) || u32(raw+8)<RECEIVING || u32(raw+8)>RECOVERY || u32(raw+12)>E_BUSY ||
@@ -253,7 +254,7 @@ int main(int argc,char **argv) {
        strcmp(argv[7],"--target") || strcmp(argv[9],"--baseline") || strcmp(argv[11],"--address") || strcmp(argv[13],"--port")) return 64;
     if(strcmp(argv[12],"127.0.0.1") && strcmp(argv[12],"192.168.77.1")) return 64;
     unsigned port=0;
-    if(!argv[14][0] || strlen(argv[14])>5) return 64;
+    if(!argv[14][0] || text_size(argv[14])>5) return 64;
     for(const char *p=argv[14];*p;p++) { if(*p<'0' || *p>'9') return 64; port=port*10+(unsigned)(*p-'0'); }
     if(port<1024 || port>65535) return 64;
 #ifndef OBD_IO_HOST

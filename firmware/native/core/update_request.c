@@ -2,6 +2,7 @@
 #include "generation.h"
 #include <string.h>
 typedef struct { const char *p,*end; } cursor;
+static size_t text_size(const char *s) { size_t n=0; while(s[n]) n++; return n; }
 static void ws(cursor *c) { while(c->p<c->end && (*c->p==' ' || *c->p=='\t' || *c->p=='\r' || *c->p=='\n')) c->p++; }
 static int token(cursor *c,char ch) { ws(c); if(c->p==c->end || *c->p++!=ch) return -1; return 0; }
 static int string(cursor *c,char *out,unsigned maximum) {
@@ -16,10 +17,11 @@ static int string(cursor *c,char *out,unsigned maximum) {
     return c->p==c->end?-1:(c->p++,0);
 }
 static int hex(const char *s,unsigned bytes) {
-    uint8_t raw[32]; return bytes>32 || strlen(s)!=bytes*2 || obd_generation_unhex(raw,s,bytes);
+    uint8_t raw[32]; return bytes>32 || text_size(s)!=bytes*2 || obd_generation_unhex(raw,s,bytes);
 }
 int obd_update_parse(obd_update_request *out,const char *text,size_t bytes) {
-    if(!out || !text || !bytes || bytes>OBD_UPDATE_LINE || memchr(text,0,bytes)) return -1;
+    if(!out || !text || !bytes || bytes>OBD_UPDATE_LINE) return -1;
+    for(size_t i=0;i<bytes;i++) if(!text[i]) return -1;
     memset(out,0,sizeof(*out)); cursor c={text,text+bytes}; unsigned seen=0;
     if(token(&c,'{')) return -1;
     for(unsigned count=0;count<9;count++) {
@@ -58,7 +60,7 @@ int obd_update_parse(obd_update_request *out,const char *text,size_t bytes) {
                 memcpy(bit==(1u<<4)?out->sha256:out->baseline,value,65);
             } else if(bit==(1u<<5)) {
                 if(strcmp(value,"song-plus-dmi-2021") && strcmp(value,"tang-plus-dmi-2021")) return -1;
-                memcpy(out->target,value,strlen(value)+1);
+                memcpy(out->target,value,text_size(value)+1);
             } else if(bit==(1u<<8) && strcmp(value,"INSTALL_NATIVE_GENERATION")) return -1;
         }
         ws(&c); if(c.p==c.end) return -1;

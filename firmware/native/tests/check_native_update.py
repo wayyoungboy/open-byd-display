@@ -405,6 +405,8 @@ class NativeUpdateTests(unittest.TestCase):
             + b'","parked":false,"confirm":"INSTALL_NATIVE_GENERATION"}\n',
             b'{"op":"update.upload","bytes":999999999}\n',
             b'{"op":"update.info","path":"../bad"}\n',
+            b'{"op":"update.info"}\x00\n',
+            b'{"op":"update.\x00info"}\n',
         ]:
             with socket.create_connection(
                 ("127.0.0.1", self.port), timeout=5
