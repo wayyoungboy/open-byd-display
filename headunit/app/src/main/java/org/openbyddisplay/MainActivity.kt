@@ -233,7 +233,7 @@ class MainActivity : Activity() {
             if (cast.has("host")) append("\nhost=").append(cast.optString("host"))
         }
         val casting = CastSessionStore.busy
-        findViewById<Button>(R.id.castStart).isEnabled = !casting && !busy && !usbBlocked && InstrumentUpdateStore.canReplace(state)
+        findViewById<Button>(R.id.castStart).isEnabled = !casting && !busy && !usbBlocked && InstrumentUpdateStore.canCast(state, findViewById<EditText>(R.id.updateHost).text.toString().trim())
         listOf(R.id.castOptions, R.id.castProbe).forEach { findViewById<Button>(it).isEnabled = !casting && !busy }
         listOf(R.id.castFullWidth, R.id.castSoftEdge, R.id.castLyrics, R.id.castNav, R.id.castAutoReconnect).forEach { findViewById<Switch>(it).isEnabled = !casting }
         findViewById<Button>(R.id.castStop).isEnabled = casting
@@ -254,7 +254,7 @@ class MainActivity : Activity() {
         findViewById<Button>(R.id.updateRefresh).isEnabled = !busy && state.has("update_id")
         findViewById<Button>(R.id.updateApply).isEnabled = !busy && !casting && !usbBlocked && !cleanupBlocked && !state.optBoolean("apply_attempted") &&
             findViewById<CheckBox>(R.id.updateParked).isChecked && remote != null && InstrumentUpdateProtocol.canApply(remote)
-        findViewById<Button>(R.id.updateCancel).isEnabled = state.has("update_id") && remote?.optString("stage") !in setOf("installing", "applying", "awaiting_confirmation", "handed_off", "applied", "recovery_required")
+        findViewById<Button>(R.id.updateCancel).isEnabled = !casting && state.has("update_id") && remote?.optString("stage") !in setOf("installing", "applying", "awaiting_confirmation", "handed_off", "applied", "recovery_required")
     }
 
     private fun showAdbHelp() {

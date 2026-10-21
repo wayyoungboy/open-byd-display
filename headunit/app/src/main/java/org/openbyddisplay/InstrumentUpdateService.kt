@@ -36,14 +36,16 @@ class InstrumentUpdateService : Service() {
             if (action == "cancel") { cancelRequested.set(true); client?.close() }
             return START_NOT_STICKY
         }
-        if (org.openbyddisplay.cast.CastSafetyStore.blocked(this) ||
-            org.openbyddisplay.vehicle.UsbSwitchStore.blocked(this) || !InstrumentOperation.acquire("update")) {
+        val host = intent.getStringExtra("host").orEmpty()
+        val observeTrial = action == "refresh" && InstrumentUpdateStore.awaitingNative(InstrumentUpdateStore.read(this), host)
+        if ((!observeTrial && org.openbyddisplay.cast.CastSafetyStore.blocked(this)) ||
+            org.openbyddisplay.vehicle.UsbSwitchStore.blocked(this) ||
+            !(if (observeTrial) InstrumentOperation.acquireUpdateStatus() else InstrumentOperation.acquire("update"))) {
             busy.set(false)
             stopForeground(true); stopSelf(startId)
             return START_NOT_STICKY
         }
         cancelRequested.set(false)
-        val host = intent.getStringExtra("host").orEmpty()
         val uri = intent.getStringExtra("uri")
         val name = intent.getStringExtra("name").orEmpty()
         val operatorParked = intent.getBooleanExtra("operator_parked", false)
@@ -72,12 +74,14 @@ class InstrumentUpdateService : Service() {
                 val state = InstrumentUpdateStore.read(this)
                 runCatching { save(state.put("message", "操作未确认或预检未通过。保留当前任务；请检查包类型、仪表连接并刷新状态，勿重复提交安装。")) }
             } finally {
-                if (cancelRequested.getAndSet(false)) runCatching {
+                // Interrupting a trial observation must never become a mutation
+                // while video owns the instrument, even if the trial just failed.
+                if (cancelRequested.getAndSet(false) && !observeTrial) runCatching {
                     cancel(InstrumentUpdateStore.read(this), host)
                 }
                 Handler(Looper.getMainLooper()).post {
                     busy.set(false)
-                    InstrumentOperation.release("update")
+                    if (observeTrial) InstrumentOperation.releaseUpdateStatus() else InstrumentOperation.release("update")
                     stopForeground(true)
                     stopSelf()
                 }

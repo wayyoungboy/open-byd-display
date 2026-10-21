@@ -62,3 +62,9 @@ dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
 }
+
+// The JVM interoperability tests compile and execute these independent peers.
+tasks.withType<org.gradle.api.tasks.testing.Test>().configureEach {
+    inputs.dir(rootProject.file("../firmware/native"))
+    inputs.file(rootProject.file("../firmware/tools/native_generation.py"))
+}

@@ -1,7 +1,7 @@
 """Host-only signed fixture for the Android client / real native updater test.
 
-No Python update server, vendor code or target execution. Health confirmation is
-an explicit host test double; the real supervisor has separate process tests.
+No Python update server, vendor code or target execution. The real supervisor
+confirms a real host child; its media health reports are explicit ABI doubles.
 """
 
 from __future__ import annotations
@@ -52,6 +52,8 @@ def main(home: Path, target: str):
             "--target",
             "native-updater-host",
             "native-store-host",
+            "native-supervisor-host",
+            "supervisor-child-healthy",
             "-j2",
         ],
         check=True,
@@ -76,14 +78,20 @@ def main(home: Path, target: str):
     ]
 
     def store(*args):
-        result = subprocess.run(
-            [str(native / "native-store-host"), *common, *args],
-            check=True,
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
-        return json.loads(result.stdout) if result.stdout else None
+        for _ in range(100):
+            result = subprocess.run(
+                [str(native / "native-store-host"), *common, *args],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            # Only read-only observations may retry the supervisor's short lock.
+            if result.returncode == 75 and args == ("status",):
+                time.sleep(0.01)
+                continue
+            result.check_returncode()
+            return json.loads(result.stdout) if result.stdout else None
+        raise TimeoutError("store observation remained busy")
 
     for model in targets:
         profile = bytearray(64)
@@ -95,7 +103,10 @@ def main(home: Path, target: str):
         )
         raw = build(
             {
-                "service.elf": (b"HOST INTEROP FIXTURE NEVER EXECUTED", 0o700),
+                "service.elf": (
+                    (native / "supervisor-child-healthy").read_bytes(),
+                    0o700,
+                ),
                 "profile.dat": (bytes(profile), 0o600),
             },
             model,
@@ -118,6 +129,7 @@ def main(home: Path, target: str):
             str(port),
         ]
     )
+    manager = None
     try:
         for _ in range(200):
             if child.poll() is not None:
@@ -141,15 +153,26 @@ def main(home: Path, target: str):
                 return
             if request["op"] != "confirm" or request["id"] != "a" * 32:
                 raise ValueError("test operation")
-            selected = store("select")
-            store(
-                "confirm-test",
-                selected["package_id"],
-                request["id"],
-                "HOST_TEST_HEALTHY",
+            if manager is not None:
+                raise ValueError("manager already started")
+            manager = subprocess.Popen(
+                [str(native / "native-supervisor-host"), *common, "--watch"]
             )
-            (home / "confirmed.json").write_text(json.dumps(store("status")))
+            deadline = time.monotonic() + 5
+            while time.monotonic() < deadline:
+                if manager.poll() is not None:
+                    raise RuntimeError("supervisor exited before confirmation")
+                state = store("status")
+                if state["current"]:
+                    (home / "confirmed.json").write_text(json.dumps(state))
+                    break
+                time.sleep(0.02)
+            else:
+                raise TimeoutError("supervisor did not confirm host media double")
     finally:
+        if manager:
+            manager.terminate()
+            manager.wait(timeout=6)
         child.terminate()
         child.wait(timeout=5)
 

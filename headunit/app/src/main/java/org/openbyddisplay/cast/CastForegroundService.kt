@@ -50,7 +50,7 @@ class CastForegroundService : Service() {
         val code = intent.getIntExtra(EXTRA_RESULT_CODE, 0)
         if ((options.source == "mirror" && (data == null || code != Activity.RESULT_OK)) ||
             org.openbyddisplay.vehicle.UsbSwitchStore.blocked(this) ||
-            !InstrumentUpdateStore.canReplace(InstrumentUpdateStore.read(this)) || !InstrumentOperation.acquire("cast")) {
+            !InstrumentUpdateStore.canCast(InstrumentUpdateStore.read(this), options.host) || !InstrumentOperation.acquire("cast")) {
             started.set(false); CastSessionStore.idle(this, "请先结束更新/USB 请求，并取得本次录屏授权"); stopSelf(startId)
             return START_NOT_STICKY
         }

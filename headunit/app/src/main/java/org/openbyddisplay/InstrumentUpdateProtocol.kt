@@ -113,7 +113,7 @@ object InstrumentUpdateProtocol {
         "receiving" -> "仪表正在接收更新包"
         "validating" -> "仪表正在校验更新包"
         "installing", "applying" -> "仪表正在安装，请保持供电"
-        "awaiting_confirmation" -> "已安装自研服务包，等待仪表试启动与健康验证；尚未确认完成"
+        "awaiting_confirmation" -> "已安装自研服务包，尚未确认完成。请启动投屏完成健康验证，再刷新本次状态"
         "handed_off" -> "已交给仪表启动更新程序，尚未确认升级完成"
         "applied" -> if (reply.optBoolean("applied")) "仪表已确认安装完成" else "尚未确认安装完成"
         "cancelled" -> "更新包已清除"

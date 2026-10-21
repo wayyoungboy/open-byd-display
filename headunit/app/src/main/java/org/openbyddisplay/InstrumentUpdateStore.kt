@@ -28,4 +28,17 @@ object InstrumentUpdateStore {
         return remote.optString("stage") == "cancelled" ||
             (remote.optString("stage") == "applied" && remote.optBoolean("applied"))
     }
+
+    fun awaitingNative(state: JSONObject, host: String): Boolean {
+        val remote = state.optJSONObject("remote") ?: return false
+        val id = state.optString("update_id")
+        return !state.optBoolean("recovery_blocked") && state.optString("kind") == "native_generation" &&
+            state.optString("host") == host && host.isNotBlank() && state.optBoolean("apply_attempted") &&
+            id.matches(Regex("[0-9a-f]{32}")) && remote.optString("update_id") == id &&
+            remote.optString("kind") == "native_generation" && remote.opt("ok") == true &&
+            remote.optString("stage") == "awaiting_confirmation" && remote.opt("applied") == false
+    }
+
+    /** A trial needs new video to verify health, while replacement stays blocked. */
+    fun canCast(state: JSONObject, host: String) = canReplace(state) || awaitingNative(state, host)
 }

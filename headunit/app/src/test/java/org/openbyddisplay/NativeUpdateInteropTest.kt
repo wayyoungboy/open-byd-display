@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit
 /** Actual Kotlin transport to actual C installer; synthetic health is explicitly host-only. */
 class NativeUpdateInteropTest {
     @Test fun bothModelPackagesReachNativeInstallationAndRequireHealthConfirmation() {
-        val root = generateSequence(File(System.getProperty("user.dir"))) { it.parentFile }
+        val root = generateSequence(File(requireNotNull(System.getProperty("user.dir")))) { it.parentFile }
             .first { File(it, "firmware").isDirectory }
         val localPython = File(root, ".venv/bin/python")
         val python = System.getenv("OPENBYDDISPLAY_PYTHON") ?: if (localPython.isFile) localPython.absolutePath else "python3"
@@ -55,7 +55,10 @@ class NativeUpdateInteropTest {
                     val pending = InstrumentUpdateProtocol.status(client.apply(id, native, true), id, native)
                     assertEquals("awaiting_confirmation", pending.getString("stage"))
                     assertFalse(pending.getBoolean("applied"))
-                    assertFalse(InstrumentUpdateStore.canReplace(JSONObject().put("update_id", id).put("remote", pending)))
+                    val trial = JSONObject().put("update_id", id).put("remote", pending).put("host", "127.0.0.1")
+                        .put("kind", native.wire).put("apply_attempted", true)
+                    assertFalse(InstrumentUpdateStore.canReplace(trial))
+                    assertTrue(InstrumentUpdateStore.canCast(trial, "127.0.0.1"))
                     process.outputStream.apply { write((JSONObject().put("op", "confirm").put("id", id).toString() + "\n").toByteArray()); flush() }
                     await(File(home, "confirmed.json"), 5)
                     val installed = InstrumentUpdateProtocol.status(client.command("update.status", id), id, native)
