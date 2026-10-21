@@ -31,7 +31,7 @@ Android **0.1.5 开发版**已接通 C 原生接收器和安装管理器。通�
 
 `update.info` 的协议号必须为 3，并报告 `native_generation_available/receive_available/target/baseline_sha256/public_key_sha256/native_max_bytes`。`public_key_sha256` 指 raw32 公钥摘要，首次读取后绑定本次任务；此协议没有 TLS，不把 pin 检查描述为网络对端认证。旧 OS/MCU 整包和 FUP2 安装能力固定 false。
 
-安装资格还要求有效且已启用的 profile、无其它试启动、版本高于已确认高水位。宋为 `song-plus-dmi-2021`，唐为 `tang-plus-dmi-2021`，基底与运行指纹取各自 `firmware/baselines.json`。共享 libc 不意味着 HMI 或硬件可互换。
+安装资格还要求有效且已启用的 profile、无其它试启动、版本高于已激活高水位（失败试启动也不降低）。宋为 `song-plus-dmi-2021`，唐为 `tang-plus-dmi-2021`，基底与运行指纹取各自 `firmware/baselines.json`。共享 libc 不意味着 HMI 或硬件可互换。
 
 ## 中断和失败
 
