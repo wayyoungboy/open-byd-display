@@ -38,6 +38,7 @@ class NativeUpdateTests(unittest.TestCase):
         if hasattr(self, "process") and self.process:
             self.process.terminate()
             self.process.wait(timeout=5)
+            self.process.stderr.close()
         if hasattr(self, "home"):
             for path in self.home.rglob("*"):
                 if path.is_dir() and not path.is_symlink():
@@ -54,10 +55,11 @@ class NativeUpdateTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, result.stderr.decode())
         return json.loads(result.stdout) if result.stdout else None
 
-    def start(self, target=None, restart=False):
+    def start(self, target=None, restart=False, crash=None):
         if self.process:
             self.process.terminate()
             self.process.wait(timeout=5)
+            self.process.stderr.close()
         self.target = target or self.target
         self.root = self.home / ("store-" + self.target)
         if not restart:
@@ -66,7 +68,8 @@ class NativeUpdateTests(unittest.TestCase):
             probe.bind(("127.0.0.1", 0))
             self.port = probe.getsockname()[1]
         self.process = subprocess.Popen([SERVER, *self.common(), "--address", "127.0.0.1", "--port", str(self.port)],
-                                        stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+                                        stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+                                        env=dict(os.environ, **({"OBD_STORE_TEST_CRASH": crash} if crash else {})))
         for _ in range(150):
             if self.process.poll() is not None:
                 self.fail(self.process.stderr.read().decode())
@@ -146,6 +149,92 @@ class NativeUpdateTests(unittest.TestCase):
         self.assertFalse(reply["can_install"])
         reply = self.request(dict(op="update.apply", update_id="a" * 32, parked=True, confirm="INSTALL_NATIVE_GENERATION"))
         self.assertFalse(reply["ok"])
+        self.assertEqual("", self.store("status")["candidate"])
+
+    def test_native_receiver_waits_for_listener_availability(self):
+        self.root = self.home / "store-network-wait"
+        self.store("init")
+        with socket.socket() as held:
+            held.bind(("127.0.0.1", 0))
+            held.listen(1)
+            self.port = held.getsockname()[1]
+            self.process = subprocess.Popen([SERVER, *self.common(), "--address", "127.0.0.1", "--port", str(self.port)],
+                                            stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+            time.sleep(.4)
+            self.assertIsNone(self.process.poll(), "receiver must wait for the NCM/listen address")
+        for _ in range(100):
+            try:
+                self.assertEqual(3, self.request(dict(op="update.info"))["update_protocol"])
+                return
+            except OSError:
+                time.sleep(.05)
+        self.fail("receiver did not recover after bind became available")
+
+    def test_installed_version_cannot_be_offered_for_activation_again(self):
+        self.start()
+        raw = self.package()
+        self.upload(raw)
+        self.request(dict(op="update.apply", update_id="a" * 32, parked=True, confirm="INSTALL_NATIVE_GENERATION"))
+        selected = self.store("select")
+        self.store("confirm-test", selected["package_id"], "a" * 32, "HOST_TEST_HEALTHY")
+        self.request(dict(op="update.status", update_id="a" * 32))
+        replay = self.upload(raw, ident="b" * 32)
+        self.assertFalse(replay["can_install"])
+
+    def test_bad_signature_digest_and_duplicate_id_conflict(self):
+        self.start()
+        for mode, ident in [("signature", "a" * 32), ("digest", "b" * 32)]:
+            raw = bytearray(self.package())
+            if mode == "signature":
+                raw[144] ^= 1
+            reply = self.upload(bytes(raw), ident=ident, **({"sha256": "3" * 64} if mode == "digest" else {}))
+            self.assertFalse(reply["ok"])
+            self.assertEqual("", self.store("status")["candidate"])
+            self.request(dict(op="update.cancel", update_id=ident))
+        raw = self.package()
+        self.upload(raw, ident="c" * 32)
+        self.assertEqual("update_id_conflict", self.upload(self.package(), ident="c" * 32)["error"])
+
+    def test_partial_payload_and_lost_final_receipt_are_queryable(self):
+        self.start()
+        raw = self.package()
+        for whole, ident in [(False, "a" * 32), (True, "b" * 32)]:
+            declaration = dict(op="update.upload", update_id=ident, kind="native_generation", bytes=len(raw),
+                               sha256=hashlib.sha256(raw).hexdigest(), target=self.target, baseline_sha256=TARGETS[self.target])
+            with socket.create_connection(("127.0.0.1", self.port), timeout=5) as connection:
+                connection.sendall(json.dumps(declaration).encode() + b"\n")
+                with connection.makefile("rb") as stream:
+                    self.assertTrue(json.loads(stream.readline())["ready"])
+                    connection.sendall(raw if whole else raw[:37])
+                    connection.shutdown(socket.SHUT_RDWR)
+            status = self.request(dict(op="update.status", update_id=ident))
+            self.assertEqual("ready" if whole else "failed", status["stage"])
+            self.request(dict(op="update.cancel", update_id=ident))
+
+    def test_activation_crash_reconciles_without_resubmitting(self):
+        for target, (where, expected) in zip(TARGETS, [("update-before-activate", "recovery_required"), ("update-after-activate", "awaiting_confirmation")]):
+            self.start(target=target, crash=where)
+            self.upload(self.package(), ident=("a" if expected == "recovery_required" else "b") * 32)
+            ident = ("a" if expected == "recovery_required" else "b") * 32
+            with self.assertRaises((json.JSONDecodeError, OSError)):
+                self.request(dict(op="update.apply", update_id=ident, parked=True, confirm="INSTALL_NATIVE_GENERATION"))
+            self.assertEqual(93, self.process.wait(timeout=5))
+            self.start(restart=True)
+            status = self.request(dict(op="update.status", update_id=ident))
+            self.assertEqual(expected, status["stage"])
+            self.assertFalse(status["applied"])
+
+    def test_invalid_json_and_unconfirmed_operator_never_mutate(self):
+        self.start()
+        raw = self.package()
+        self.upload(raw)
+        for payload in [b'{"op":"update.info","op":"update.apply"}\n',
+                        b'{"op":"update.apply","update_id":"' + b'a' * 32 + b'","parked":false,"confirm":"INSTALL_NATIVE_GENERATION"}\n',
+                        b'{"op":"update.upload","bytes":999999999}\n', b'{"op":"update.info","path":"../bad"}\n']:
+            with socket.create_connection(("127.0.0.1", self.port), timeout=5) as connection:
+                connection.sendall(payload)
+                with connection.makefile("rb") as stream:
+                    self.assertEqual("invalid_request", json.loads(stream.readline())["error"])
         self.assertEqual("", self.store("status")["candidate"])
 
 
