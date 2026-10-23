@@ -21,6 +21,8 @@ class VideoStreamClient(private val settings: CastOptions) : AutoCloseable {
     private var cookie = 0L
     private var lastPts = -1L
     private var bounds: CastRect? = null
+    private var capabilities: CastCapabilities? = null
+    fun capabilities(): CastCapabilities? = capabilities
     private fun <T> transaction(block: (DataOutputStream) -> T): T {
         check(!closed.get())
         val guard = watchdog.schedule({ runCatching { socket.close() } }, 5, TimeUnit.SECONDS)
@@ -46,10 +48,10 @@ class VideoStreamClient(private val settings: CastOptions) : AutoCloseable {
             check(ready.opt("ready") == true && ready.optString("protocol") == "LHF2" && ready.opt("continuous") == true)
             check(integer(ready, "heartbeat_protocol") == 1L && integer(ready, "window_protocol") == 1L)
             check(integer(ready, "submitted") == 0L)
-            val a = ready.getJSONArray("bounds")
-            check(a.length() == 4)
-            val values = (0..3).map { i -> integerValue(a.get(i)).also { check(it in 0..1920) }.toInt() }
-            CastRect(values[0], values[1], values[2], values[3]).also { bounds = it }
+            val caps = CastCapabilities.parse(ready)
+            capabilities = caps
+            bounds = caps.bounds
+            caps.bounds
         }
     }
     private fun connect() {
@@ -62,7 +64,11 @@ class VideoStreamClient(private val settings: CastOptions) : AutoCloseable {
         connect()
         return transaction { out ->
             out.writeBytes("INFO"); out.flush()
-            reply().also { check(it.optString("stage") == "capabilities") }
+            reply().also {
+                check(it.optString("stage") == "capabilities")
+                capabilities = CastCapabilities.parse(it)
+                bounds = capabilities!!.bounds
+            }
         }
     }
     fun configure(rect: CastRect): JSONObject = transaction { out ->

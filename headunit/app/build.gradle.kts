@@ -15,8 +15,8 @@ android {
         if (usbTestInstall) resValue("string", "usb_test_app_name", "OpenBYDDisplay · 开发版")
         minSdk = 28
         targetSdk = 29
-        versionCode = 6
-        versionName = "0.1.5"
+        versionCode = 7
+        versionName = "0.1.6"
     }
 
     signingConfigs {

@@ -46,3 +46,39 @@
 Kotlin 发送端通过真实 TCP 连接同一份 C stream/media 引擎，发送 70 帧真实 AVC，完成能力探测、配置、心跳、逐帧 ACK 和 EOS；提交数据经 FFmpeg 解码后逐帧摘要一致。QNX 服务调用使用显式 ABI 替身，不是 QNX 执行或实物出画。C 测试另覆盖错误 CRC、范围越界、断线后新首帧、失败清理以及监听 socket 重复接纳连接。
 
 运行 Kotlin 测试需要 C 编译器和带 libx264 的 FFmpeg；CI 明确安装这些工具。参考 Android [MediaProjection 资源恢复](https://developer.android.com/media/grow/media-projection#resource_recovery)；对应原生平台约束见[QNX 构建](qnx66-open-toolchain.md)。
+
+## 唐版「全屏不了」说明
+
+用户反馈常见画面：地图只在仪表中间，四周仍是原厂时间/车速/档位/电量。这通常**不是** App「填满标定区域」开关坏了。
+
+### 本项目 App 实际做的事
+
+| 开关/选项 | 实际含义 |
+| --- | --- |
+| 填满仪表标定区域 / layout=`full` | 在接收器报告的**单个标定矩形**内铺满（保持比例） |
+| layout=`center` / `mini` | 在同一标定矩形内再缩小 |
+| 柔边 | 只改编码画面边缘像素，**不会**去掉原厂 HMI 控件 |
+
+投屏管线**不会**调用 `cast.profile.get` / `cast.start` 的多 profile 选择，也**不会**下发页面切换、页面锁或 PNG 遮罩。`CastProfile` / `ClusterJsonClient` 目前是为将来 HMI 接入预留的协议模型；`CastForegroundService` 只用视频口的 `bounds`。
+
+自研接收器 ready/INFO 固定宣告 `hmi_control=false`、`native_overlay=false`。父窗口按物理分辨率创建但是透明底，视频子窗口只覆盖标定矩形；标定以外的区域会透出原厂 Kanzi HMI。
+
+### 熊猫唐版 1.0.3 全屏需要的条件（对照）
+
+对照智能守卫 3.0.26 附带的 `factory-1.0.2.json` 与唐版 `Fission-Instrument-D129-1.0.3`：
+
+| 条件 | 唐版熊猫 | 本项目 |
+| --- | --- | --- |
+| 全屏几何 | profile 1：`0,0 1920×720`（不要误用 profile 3：`410,0 1100×720`） | 单一 `profile.dat` 标定矩形；未接多 profile |
+| 开始页 | `start_page=info`，`start_info_id=12`，`page_policy` | 未实现 OEM 页面事务 |
+| 页面锁/布局 | `page_lock_extension`、`start_layout`/`stop_layout` | 未实现 |
+| 全屏遮罩 | `custom/mask/fullscreen3.png`（1920×720，中心透明、边缘不透明） | 仅有车机端柔边；不复制厂商遮罩素材 |
+| USB 默认投屏 | `data/keys/usb.json` `target_mode:2` | 自研 USB 后端另计 |
+| 授权 | Ed25519 许可证前缀 | 自研协议，无商业鉴权字段 |
+
+宋版样本有 `fullscreen.png` / `fullscreen2.png`，唐版新增 `fullscreen3.png` 与更完整的页面策略。两车型 KZB/HMI 不同，不能把宋版小屏坐标或 profile 编号含义套到唐上。
+
+### 结论
+
+- **只改 App/配置**：可以把能力探测和状态文案说清楚（0.1.6），避免把「标定全区域」理解成「隐藏原厂仪表」。
+- **要真正全屏（去掉原厂车速等）**：必须做仪表端 HMI 协作（页面切换/锁、遮罩或足够高的窗口层级且原厂控件让出），属于 QNX 原生缺口，见上文「尚未完成」。

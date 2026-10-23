@@ -150,6 +150,17 @@ class CastForegroundService : Service() {
                         current(); CastSafetyStore.begin(this, run.owner); run.touched = true
                     }
                     current()
+                    val caps = stream.capabilities()
+                    if (caps != null) {
+                        CastSessionStore.write(this, JSONObject()
+                            .put("state", "window_calibrated")
+                            .put("message", caps.fullscreenNote(options.layout == "full"))
+                            .put("target_casting", true)
+                            .put("hmi_control", caps.hmiControl)
+                            .put("covers_physical", caps.coversPhysical)
+                            .put("bounds", org.json.JSONArray(listOf(caps.bounds.x, caps.bounds.y, caps.bounds.width, caps.bounds.height)))
+                            .put("visual_verified", false))
+                    }
                     val rect = bounds.preset(options.layout).fit(width, height)
                     stream.configure(rect)
                     encoder.reconnect()

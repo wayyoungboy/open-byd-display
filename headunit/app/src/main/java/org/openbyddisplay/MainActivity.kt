@@ -153,9 +153,12 @@ class MainActivity : Activity() {
         thread {
             val text = runCatching {
                 val options = CastSettings.snapshot(this).copy(host = host)
-                val capability = VideoStreamClient(options).use { it.probe() }
-                "自研视频服务已响应\n标定范围：${capability.getJSONArray("bounds")}\n" +
-                    "持续推流、心跳和窗口配置可用。HMI 控制及独立透明叠加尚未接入。"
+                VideoStreamClient(options).use { client ->
+                    client.probe()
+                    val caps = checkNotNull(client.capabilities())
+                    "自研视频服务已响应\n" + caps.summarize() +
+                        "\n持续推流、心跳和窗口配置可用。"
+                }
             }.getOrElse { "探测失败：${it.message}" }
             handler.post { findViewById<TextView>(R.id.castStatus).text = text }
         }
